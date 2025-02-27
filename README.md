@@ -110,14 +110,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 
 ## Contact
 For questions or feedback, please contact:
-- **Email**: [Dhruvil.Devidar@Technovate.in]
+- **Email**: [ Dhruvil.Devidar@Technovate.in ]
 - **GitHub**: [DevidarDhruvil](https://github.com/DevidarDhruvil)
 
 ---
-
-### Notes for Customization
-- Replace `<your-repository-url>`, `[your-email@example.com]`, and `[Your GitHub Username]` with your actual repository URL, email, and GitHub username.
-- If you have a `LICENSE` file, ensure it’s included in your repository. Otherwise, create one or remove the "License" section.
-- Adjust the "Technologies Used" and "Features" sections to match any additional tools or functionalities specific to your project.
-
-This `README.md` is ready to be uploaded to GitHub. You can save it as `README.md` in the root directory of your project and commit it to your repository. Let me know if you’d like to customize it further!
