@@ -110,8 +110,8 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 
 ## Contact
 For questions or feedback, please contact:
-- **Email**: [your-email@example.com]
-- **GitHub**: [Your GitHub Username](https://github.com/your-username)
+- **Email**: [Dhruvil.Devidar@Technovate.in]
+- **GitHub**: [DevidarDhruvil](https://github.com/DevidarDhruvil)
 
 ---
 
