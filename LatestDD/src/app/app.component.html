@@ -75,43 +75,51 @@
 
     <!-- CENTER PANEL -->
     <div class="center">
-
       <ng-container *ngIf="selectedQuery; else noQueryOpen">
         <ng-container *ngIf="selectedQuery.selectedTable; else noTable">
           <div class="table-container">
-
             <table border="2">
               <thead>
                 <tr>
-                  <th *ngFor=" let column of selectedColumns.length ? selectedColumns : columns">
-                  {{ column }}
+                  <th
+                    *ngFor="
+                      let column of selectedColumns.length
+                        ? selectedColumns
+                        : columns
+                    "
+                    (click)="sortTable(column)"
+                    style="cursor: pointer"
+                  >
+                    {{ column }}
+                    <span *ngIf="sortColumn === column" class="sorting">
+                      {{ sortDirection === "asc" ? " ▲" : " ▼" }}
+                    </span>
                   </th>
                 </tr>
               </thead>
-
               <tbody>
                 <tr *ngFor="let row of tabledata">
-                  <td *ngFor=" let column of selectedColumns.length ? selectedColumns : columns">
+                  <td
+                    *ngFor="
+                      let column of selectedColumns.length
+                        ? selectedColumns
+                        : columns
+                    "
+                  >
                     {{ row[column] }}
                   </td>
                 </tr>
               </tbody>
             </table>
-
           </div>
         </ng-container>
-
         <ng-template #noTable>
           <h1 class="default-query-message">No Query Available</h1>
         </ng-template>
-
       </ng-container>
-
       <ng-template #noQueryOpen>
         <h1 class="default-query-message">Please open a query</h1>
       </ng-template>
-
-    <!-- CENTER PANEL DIV ENDS HERE.   -->
     </div>
     
     
@@ -435,17 +443,29 @@
 
           <div>
             <p>
-              <i class="fa-solid fa-database opIcons"></i>Select
-              <span (click)="editTable()" class="highlightValues">{{ selectedTable }}</span> Table
+              <i class="fa-solid fa-database opIcons" id="table"></i>Select
+              <span (click)="editTable()" class="highlightValues">{{
+                selectedTable
+              }}</span>
+              Table
             </p>
           </div>
 
           <div *ngIf="selectedColumns.length > 0">
             <div>
-              <i class="fa-solid fa-table-columns opIcons"></i>
-              Selected
-              <span (click)="editColumn()" class="highlightValues">
-              {{ selectedColumns.length }} Columns</span>
+              <i class="fa-solid fa-table-columns opIcons" id="column"></i>Selected
+              <span (click)="editColumn()" class="highlightValues">{{ selectedColumns.length }} Columns</span>
+            </div>
+          </div>
+          <div *ngIf="selectedColumns.length > 0">
+            <div class="DisplayFilter">
+              <i class="fa-solid fa-filter opIcons" id="filter"></i> Filter Selected:
+              <span
+                (click)="editFilter()"
+                class="highlightValues"
+                *ngFor="let column of selectedColumns">
+                {{ column }}
+              </span>
             </div>
           </div>
 

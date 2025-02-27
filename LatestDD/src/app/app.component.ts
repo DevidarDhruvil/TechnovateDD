@@ -27,6 +27,83 @@ export class AppComponent implements OnInit {
     this.gettabledata();
   }
 
+  sortColumn: string = "";
+  sortDirection: "asc" | "desc" = "asc";
+
+  // Existing methods...
+
+  sortTable(column: string) {
+    if (this.sortColumn === column) {
+      this.sortDirection = this.sortDirection === "asc" ? "desc" : "asc";
+    } else {
+      this.sortColumn = column;
+      this.sortDirection = "asc";
+    }
+
+    this.tabledata.sort((a, b) => {
+      const aValue = a[column];
+      const bValue = b[column];
+
+      // Function to classify and extract text and numbers
+      const classifyValue = (value: string) => {
+        if (/^\d+$/.test(value)) {
+          return { type: "number", value: parseInt(value, 10) };
+        } else if (/[a-zA-Z]+_\d+/.test(value)) {
+          // Matches Name_4, Name_10, etc.
+          const match = value.match(/([a-zA-Z_]+)(\d+)/);
+          return {
+            type: "stringWithNumber",
+            text: match ? match[1] : value,
+            number: match && match[2] ? parseInt(match[2], 10) : 0,
+          };
+        }
+        return { type: "string", value: value };
+      };
+
+      const aParts = classifyValue(aValue);
+      const bParts = classifyValue(bValue);
+
+      // Numbers come first
+      if (aParts.type === "number" && bParts.type === "number") {
+        return this.sortDirection === "asc"
+          ? (aParts.value as number) - (bParts.value as number)
+          : (bParts.value as number) - (aParts.value as number);
+      }
+      if (aParts.type === "number" && bParts.type !== "number") {
+        return this.sortDirection === "asc" ? -1 : 1;
+      }
+      if (aParts.type !== "number" && bParts.type === "number") {
+        return this.sortDirection === "asc" ? 1 : -1;
+      }
+
+      // Sorting logic for strings with numbers
+      if (
+        aParts.type === "stringWithNumber" &&
+        bParts.type === "stringWithNumber"
+      ) {
+        if (aParts.text !== undefined && bParts.text !== undefined && aParts.text !== bParts.text) {
+          return this.sortDirection === "asc"
+            ? aParts.text.localeCompare(bParts.text)
+            : bParts.text.localeCompare(aParts.text);
+        }
+        return this.sortDirection === "asc"
+          ? (aParts.number ?? 0) - (bParts.number ?? 0)
+          : (bParts.number ?? 0) - (aParts.number ?? 0);
+      }
+
+      // Pure strings should be sorted alphabetically
+      return this.sortDirection === "asc"
+        ? (aParts.value as string).localeCompare(bParts.value as string)
+        : (bParts.value as string).localeCompare(aParts.value as string);
+    });
+  }
+
+
+
+
+
+
+
   Apidata = inject(ApiService);
   payload: [] =[]
   @ViewChild('overlay') overlay!: ElementRef;
@@ -407,6 +484,9 @@ export class AppComponent implements OnInit {
   }
   editColumn(){
     this.showColumnOverlay=true;
+  }
+  editFilter(){
+    this.showFilterRowsOverlay=true;
   }
 
 
