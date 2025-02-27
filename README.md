@@ -107,7 +107,7 @@ We welcome contributions to enhance Dynamic Dashboard! Here’s how you can cont
 
 ## Contact
 For questions or feedback, please contact:
-- **Email**: [ Dhruvil.Devidar@Technovate.in ]
+- **Email**: Dhruvil.Devidar@Technovate.in 
 - **GitHub**: [DevidarDhruvil](https://github.com/DevidarDhruvil)
 
 ---
