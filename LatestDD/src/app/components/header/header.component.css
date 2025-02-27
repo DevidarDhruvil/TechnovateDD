@@ -5,10 +5,12 @@
   width: 100%;
   padding: 10px;
   /* background-color: #f8f9fa; */
+  border-bottom: 1px solid #ccc;
 }
 
 #imgtag {
-  height: 40px; /* Adjust size as needed */
+  cursor: pointer;
+  height: 3rem; /* Adjust size as needed */
 }
 
 #ptag {
