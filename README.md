@@ -105,9 +105,6 @@ We welcome contributions to enhance Dynamic Dashboard! Here’s how you can cont
 - Ensure all new features include tests (if applicable).
 - Keep the UI responsive and maintainable.
 
-## License
-This project is licensed under the MIT License. See the `LICENSE` file for details.
-
 ## Contact
 For questions or feedback, please contact:
 - **Email**: [ Dhruvil.Devidar@Technovate.in ]
