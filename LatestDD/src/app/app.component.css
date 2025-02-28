@@ -40,7 +40,7 @@
   width: 60%;
   height: 100vh;
   border: 1px solid #ccc;
-  max-height:85%;
+  max-height: 85%;
   border-radius: 9px;
   margin: 6px;
   overflow: hidden;
@@ -50,7 +50,7 @@
 }
 
 .table-container::-webkit-scrollbar {
-  width: 0.7rem ;
+  width: 0.7rem;
   height: 0.7rem;
 }
 
@@ -64,7 +64,7 @@
 }
 
 table {
-  border-collapse:collapse;
+  border-collapse: collapse;
   border-radius: 10px;
   width: 100%;
   white-space: nowrap;
@@ -83,7 +83,7 @@ td {
   text-align: center;
   border: 1px solid #ccc;
 }
-th{
+th {
   padding: 8px;
   position: sticky;
   font-weight: 600;
@@ -97,7 +97,6 @@ th{
 ul {
   list-style: none;
   margin-bottom: 0%;
-  
 }
 
 hr {
@@ -458,7 +457,7 @@ input[type="checkbox"] {
   background-color: #eaeaea; /* Changes while clicking */
 }
 
-.detail-box{
+.detail-box {
   margin-bottom: 20px;
 }
 
@@ -470,7 +469,7 @@ input[type="checkbox"] {
   padding-left: 3px;
 }
 
-.Rdetails{
+.Rdetails {
   font-weight: 400;
   margin-bottom: 8px;
   padding-left: 6px;
@@ -689,7 +688,7 @@ label {
 }
 
 .default-query-message {
-  padding: 0px ;
+  padding: 0px;
   font-family: "IBM Plex Sans", sans-serif;
   font-size: 30px;
   color: #333;
@@ -715,7 +714,7 @@ label {
   margin-right: 10px;
 }
 
-.queryopIcons{
+.queryopIcons {
   opacity: 0.7;
   font-size: 1em;
   margin-right: 10px;
@@ -750,16 +749,18 @@ label {
   position: relative;
   top: 2.7px;
 }
-.DisplayFilter{
+.DisplayFilter {
   padding: 0px;
-  flex-wrap: wrap;  /* Allows items to wrap */
+  flex-wrap: wrap; /* Allows items to wrap */
   margin-top: 11px;
 }
-#filter,#column,#table{
+#filter,
+#column,
+#table {
   margin: 0px;
   padding-right: 9px;
 }
-.opIcons{
+.opIcons {
   opacity: 0.5;
   font-size: 1em;
   margin-right: 10px;
