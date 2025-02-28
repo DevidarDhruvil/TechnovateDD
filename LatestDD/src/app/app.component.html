@@ -83,7 +83,7 @@
             <table border="2">
               <thead>
                 <tr>
-                  <th *ngFor=" let column of selectedColumns.length ? selectedColumns : columns">
+                  <th *ngFor=" let column of selectedColumns.length ? selectedColumns : allColumns">
                   {{ column }}
                   </th>
                 </tr>
@@ -91,7 +91,7 @@
 
               <tbody>
                 <tr *ngFor="let row of tabledata">
-                  <td *ngFor=" let column of selectedColumns.length ? selectedColumns : columns">
+                  <td *ngFor=" let column of selectedColumns.length ? selectedColumns : allColumns">
                     {{ row[column] }}
                   </td>
                 </tr>
@@ -177,7 +177,7 @@
             
             <h4>Select Columns</h4>
             <ul>
-              <li *ngFor="let column of columnList">
+              <li *ngFor="let column of allColumns">
                 <input
                   type="checkbox"
                   [value]="column"
@@ -237,7 +237,7 @@
               <label>Join On:</label>
               <div class="join-condition">
                 <select [(ngModel)]="selectedLeftColumn">
-                  <option *ngFor="let col of columns" [value]="col">
+                  <option *ngFor="let col of columnList" [value]="col">
                     {{ col }}
                   </option>
                 </select>
@@ -256,12 +256,12 @@
                 {{ join }}
               </option>
             </select>
-            <label>Columns to Include:</label>
+            <!-- <label>Columns to Include:</label>
             <select [(ngModel)]="selectedJoinColumns">
               <option *ngFor="let col of columns" [value]="col">
                 {{ col }}
               </option>
-            </select>
+            </select> -->
 
             <div class="buttons">
               <button (click)="confirmJoinTable()">Confirm</button>
@@ -436,7 +436,7 @@
           <div>
             <p>
               <i class="fa-solid fa-database opIcons"></i>Select
-              <span (click)="editTable()" class="highlightValues">{{ selectedTable }}</span> Table
+              <span (click)="editTable()" class="highlightValues">{{ selectedTable }}</span> table
             </p>
           </div>
 
@@ -446,6 +446,12 @@
               Selected
               <span (click)="editColumn()" class="highlightValues">
               {{ selectedColumns.length }} Columns</span>
+            </div>
+          </div>
+
+          <div  *ngIf="selectedJoinTable.length > 0">
+            <div >
+              <i class="fa-solid fa-circle-half-stroke opIcons"> </i> <span (click)="editJoin()" class="highlightValues">{{selectedJoinType}}</span> join <span (click)="editJoin()" class="highlightValues">{{selectedJoinTable}}</span> table
             </div>
           </div>
 

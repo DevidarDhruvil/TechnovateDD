@@ -3,14 +3,23 @@ import { Component, ElementRef, HostListener, OnInit, ViewChild, inject } from '
 import { FormsModule } from '@angular/forms';
 import { ApiService } from './Services/api.service';
 import { HeaderComponent } from './components/header/header.component';
+import { isEmpty } from 'rxjs';
 
 // Extend the Query interface
 interface Query {
   id: number;
   name: string;
   selectedTable?: string;
+  selectedColumns?: [];
+  allColumns?: string[];
   columns?: string[];
   tableData?: any[];
+  rightTable?: string;
+  rightcolumns?: string[];
+  selectedJoinTable?: string;
+  selectedJoinType?: string;
+  selectedLeftColumn?: string;
+  selectedRightColumn?: string;
 }
 
 @Component({
@@ -26,12 +35,21 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     this.gettabledata();
   }
+  constructor(){
+    this.joinDetails = {
+      JoinTable: '',
+      LeftColumn: '',
+      RightColumn: '',
+      JoinType: '',
+      LeftTable: ''
+    };
+  }
 
   Apidata = inject(ApiService);
   payload: [] =[]
   @ViewChild('overlay') overlay!: ElementRef;
 
-  // Overlays and flags (unchanged)
+  // Overlays.
   showOverlay = false;
   showTableOverlay = false;
   showColumnOverlay = false;
@@ -46,6 +64,7 @@ export class AppComponent implements OnInit {
   selectedTable: string = '';
 
   columns: string[] = [];
+  allColumns: string[] = [];
   //Just for storing of column names and showing in column dropdown.
   columnList:string[] = []
   selectedColumns: string[] = [];
@@ -59,7 +78,6 @@ export class AppComponent implements OnInit {
   selectedQuery: Query | null = null;
   queryTitle: string = '';
 
-  // (Other propertiFes remain unchanged)
   filterColumns = [
     {
       name: 'Customer Name',
@@ -102,11 +120,12 @@ export class AppComponent implements OnInit {
   columnTypes = ['String', 'Text', 'Integer', 'Decimal', 'Date', 'Time', 'Datetime'];
 
   selectedJoinTable = '';
+  rightTable: string = ''
   selectedLeftColumn = '';
   selectedRightColumn = '';
   selectedJoinType = '';
   selectedJoinColumns: string[] = [];
-  joinTypes = ['Inner Join', 'Left Join', 'Right Join', 'Full Join'];
+  joinTypes = ['inner', 'left', 'right', 'full'];
 
   selectedTableToAppend: string = '';
   dropDuplicates: string = 'No';
@@ -131,6 +150,7 @@ export class AppComponent implements OnInit {
 
   //GETTING COLUMN NAMES FOR RIGHT TABLE IN JOINING.
   getrightcolumndata(table1: string) {
+    debugger;
     this.Apidata.GetColumnApi(table1).subscribe(
       (res: any) => (this.rightcolumns = res)
     );
@@ -140,19 +160,40 @@ export class AppComponent implements OnInit {
   getdata() {
     this.Apidata.GetData(this.selectedTable).subscribe((res: any) => {
       this.columns = Object.keys(res[0]);
-      // this.getcolumndata(this.selectedTable);
+      this.allColumns=this.columns;
       this.tabledata = res;
-      // Ensure selectedColumns updates based on the query's selection
+
       if (this.selectedQuery?.columns?.length) {
         this.selectedColumns = this.selectedQuery.columns.filter(col => this.columns.includes(col));
-      } else {
+      } 
+      else {
         this.columns = [...this.columns]; // Default to all columns
       }
     });
   }
-
+  
+  getJoinData(){
+    this.Apidata.GetJoinTableData(this.joinDetails).subscribe((res:any)=>{
+      if(res.length===0) {
+        this.tabledata=[];
+        this.selectedColumns=[];
+      }
+      else {
+        this.allColumns = Object.keys(res[0]);
+        if(this.selectedQuery){
+          this.selectedQuery.tableData = res;
+        }
+        this.tabledata = res;
+      }
+    })
+  }
 
   RightTable(Rtable: string) {
+    debugger;
+    this.rightTable = Rtable;
+    if (this.selectedQuery) {
+      this.selectedQuery.rightTable = Rtable;
+    }
     this.getrightcolumndata(Rtable);
   }
 
@@ -162,22 +203,60 @@ export class AppComponent implements OnInit {
     this.queries.push({
       id: this.queryCount,
       name: `Query ${this.queryCount}`,
+      rightTable: '',
+      selectedTable: '',
+      selectedColumns: [],
+      allColumns:[],
+      columns: [],
+      rightcolumns: [],
+      tableData: [],
+      selectedJoinTable: '',
+      selectedJoinType: '',
+      selectedLeftColumn: '',
+      selectedRightColumn: ''
     });
   }
   openQuery(query: Query) {
     this.selectedQuery = query;
     this.queryTitle = query.name;
-
+    debugger;
     if (query.selectedTable) {
       this.selectedTable = query.selectedTable;
       this.getcolumndata(query.selectedTable);
-      this.getdata();
-    }
-    else {
+debugger;
+      if (query.selectedColumns && query.rightTable && query.selectedJoinTable && query.selectedJoinType && query.selectedLeftColumn && query.selectedRightColumn) {
+        this.selectedColumns = query.selectedColumns
+        this.rightTable = query.rightTable;
+        this.selectedJoinTable = query.selectedJoinTable;
+        this.selectedJoinType = query.selectedJoinType;
+        this.selectedLeftColumn = query.selectedLeftColumn;
+        this.selectedRightColumn = query.selectedRightColumn;
+        debugger;
+        this.RightTable(this.rightTable);
+        this.getrightcolumndata(this.rightTable);
+        // this.getJoinData();
+        this.confirmJoinTable();
+      } else {
+        this.selectedJoinTable = '';
+        this.selectedJoinType = '';
+        this.rightTable = '';
+        this.rightcolumns = []
+        this.selectedLeftColumn = '';
+        this.selectedRightColumn = '';
+        this.getdata();
+      }
+    } else {
       this.selectedTable = '';
       this.selectedColumns = [];
       this.columns = [];
+      this.allColumns = [];
+      this.rightTable = '';
+      this.rightcolumns = [];
       this.tabledata = [];
+      this.selectedJoinTable = '';
+      this.selectedJoinType = '';
+      this.selectedLeftColumn = '';
+      this.selectedRightColumn = '';
     }
   }
   updateSelectedQueryName() {
@@ -187,7 +266,6 @@ export class AppComponent implements OnInit {
   }
   deleteQuery(queryId: number): void {
     this.queries = this.queries.filter((query) => query.id !== queryId);
-    // Optional: Confirm deletion with the user
   }
 
 
@@ -263,15 +341,29 @@ export class AppComponent implements OnInit {
     this.showJoinTableOverlay = true;
     this.showOverlay = false;
   }
+  joinDetails: { 
+    JoinTable: string; 
+    LeftColumn: string; 
+    RightColumn: string; 
+    JoinType: string; 
+    LeftTable: string; 
+  };
   confirmJoinTable() {
-    console.log('Join Table Details:', {
+    this.joinDetails = {
       JoinTable: this.selectedJoinTable,
       LeftColumn: this.selectedLeftColumn,
       RightColumn: this.selectedRightColumn,
       JoinType: this.selectedJoinType,
-      SelectedColumns: this.selectedJoinColumns,
-    });
+      LeftTable: this.selectedTable,
+    };
+    if (this.selectedQuery) {
+      this.selectedQuery.selectedJoinTable = this.selectedJoinTable;
+      this.selectedQuery.selectedJoinType = this.selectedJoinType;
+      this.selectedQuery.selectedLeftColumn = this.selectedLeftColumn;
+      this.selectedQuery.selectedRightColumn = this.selectedRightColumn;
+    }
     this.showJoinTableOverlay = false;
+    this.getJoinData();
   }
   closeJoinTableOverlay() {
     this.showJoinTableOverlay = false;
@@ -407,6 +499,9 @@ export class AppComponent implements OnInit {
   }
   editColumn(){
     this.showColumnOverlay=true;
+  }
+  editJoin(){
+    this.showJoinTableOverlay=true;
   }
 
 

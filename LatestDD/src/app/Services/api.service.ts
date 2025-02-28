@@ -9,15 +9,25 @@ export class ApiService {
   http = inject(HttpClient);
 
   GetTableApi(payload: any) {
-    return this.http.post('http://192.168.1.76:5300/api/Database/tables', payload);
+    return this.http.post('http://192.168.1.76:5400/api/Database/tables', payload);
   }
   GetColumnApi(selectedTable: string){
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post("http://192.168.1.76:5300/api/Database/fields",JSON.stringify(selectedTable),{headers});
+    const payload = {tableName:selectedTable}
+    return this.http.post("http://192.168.1.76:5400/api/Database/columns",payload,{headers});
   }
 
   GetData(selectedTable: string) {
     const payload = {tableName: selectedTable}
     return this.http.post(`http://192.168.1.76:5400/api/Database/table-data`,payload);
+  }
+
+  GetJoinTableData(joinDetails: any){
+    const payload = { leftTableName: joinDetails.LeftTable,
+                      rightTableName: joinDetails.JoinTable,
+                      leftColumnName: joinDetails.LeftColumn,
+                      rightColumnName: joinDetails.RightColumn,
+                      joinType: joinDetails.JoinType}
+    return this.http.post(`http://192.168.1.76:5300/api/JoinTables/join-tables`,payload);
   }
 }
