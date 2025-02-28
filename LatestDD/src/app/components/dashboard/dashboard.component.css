@@ -819,7 +819,7 @@ label {
   display: flex;
   flex-direction: column;
   width: 500px; /* Fixed width, narrower than height */
-  height: 600px; /* Taller height for a square/rectangle shape */
+  height: 300px; /* Taller height for a square/rectangle shape */
   max-height: 90vh; /* Prevent overflow beyond viewport height */
   overflow-y: auto; /* Enable vertical scrolling for long content */
 }
