@@ -7,6 +7,7 @@
     href="https://fonts.googleapis.com/css2?family=Roboto&family=Open+Sans&display=swap"
     rel="stylesheet"
   />
+
   <app-header></app-header>
 
   <div class="container">
@@ -21,7 +22,6 @@
         </ul>
         <div id="queryContainer">
           <div *ngFor="let query of queries" class="queryItem">
-            <!-- Query name button -->
             <button
               class="query-button"
               (click)="openQuery(query)"
@@ -30,8 +30,6 @@
               <i class="fa-solid fa-table-list queryopIcons"></i>
               {{ query.name }}
             </button>
-
-            <!-- delete-button -->
             <button class="delete-button" (click)="deleteQuery(query.id)">
               <i class="fa-solid fa-xmark"></i>
             </button>
@@ -47,9 +45,7 @@
             <h4 class="charttitle">Charts</h4>
             <button id="addchartBtn" (click)="addCharts()">+</button>
           </li>
-          <div id="chartsContainer">
-            <!-- Charts content remains unchanged -->
-          </div>
+          <div id="chartsContainer"></div>
         </ul>
       </div>
 
@@ -66,7 +62,6 @@
       </div>
 
       <hr />
-      <!-- LEFT PANEL DIV ENDS HERE. -->
     </div>
 
     <!-- CENTER PANEL -->
@@ -79,9 +74,9 @@
                 <tr>
                   <th
                     *ngFor="
-                      let column of selectedColumns.length
-                        ? selectedColumns
-                        : columns
+                      let column of selectedQuery.selectedColumns.length
+                        ? selectedQuery.selectedColumns
+                        : selectedQuery.allColumns
                     "
                     (click)="sortTable(column)"
                     style="cursor: pointer"
@@ -94,12 +89,12 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let row of tabledata">
+                <tr *ngFor="let row of selectedQuery.tableData">
                   <td
                     *ngFor="
-                      let column of selectedColumns.length
-                        ? selectedColumns
-                        : columns
+                      let column of selectedQuery.selectedColumns.length
+                        ? selectedQuery.selectedColumns
+                        : selectedQuery.allColumns
                     "
                   >
                     {{ row[column] }}
@@ -109,20 +104,19 @@
             </table>
           </div>
         </ng-container>
+
         <ng-template #noTable>
           <h1 class="default-query-message">No Query Available</h1>
         </ng-template>
       </ng-container>
+
       <ng-template #noQueryOpen>
         <h1 class="default-query-message">Please open a query</h1>
       </ng-template>
-
-      <!-- CENTER PANEL DIV ENDS HERE.   -->
     </div>
 
     <!-- RIGHT PANEL -->
     <div class="right-pannel">
-      <!-- Add the View SQL and Execute buttons at the top right of your center container -->
       <div class="execSql-buttons">
         <button (click)="viewSql()">View SQL</button>
         <button>Execute</button>
@@ -153,7 +147,6 @@
           </div>
         </div>
       </div>
-
       <div class="detail-box">
         <h4 class="Rdetails">Details</h4>
         <label for="queryTitle" class="Rqueriestitle">Query Title</label>
@@ -209,7 +202,7 @@
           </ul>
         </div>
 
-        <!-- SELECT TABLE OVERLAY. -->
+        <!-- SELECT TABLE OVERLAY -->
         <div class="table-overlay" *ngIf="showTableOverlay">
           <div class="table-overlay-content">
             <h4>Select a Table</h4>
@@ -222,16 +215,18 @@
           </div>
         </div>
 
-        <!-- SELECT COLUMNS OVERLAY. -->
+        <!-- SELECT COLUMNS OVERLAY -->
         <div class="column-overlay" *ngIf="showColumnOverlay">
           <div class="column-overlay-content">
             <h4>Select Columns</h4>
             <ul>
-              <li *ngFor="let column of columnList">
+              <li *ngFor="let column of selectedQuery?.allColumns || []">
                 <input
                   type="checkbox"
                   [value]="column"
-                  [checked]="selectedColumns.includes(column)"
+                  [checked]="
+                    selectedQuery?.selectedColumns?.includes(column) || false
+                  "
                   (change)="toggleColumnSelection(column, $event)"
                 />
                 {{ column }}
@@ -241,7 +236,7 @@
           </div>
         </div>
 
-        <!-- CUSTOM COLUMN OVERLAY. -->
+        <!-- CUSTOM COLUMN OVERLAY -->
         <div class="add-column-overlay" *ngIf="showAddColumnOverlay">
           <div class="add-column-content">
             <h3>Add New Column</h3>
@@ -266,50 +261,47 @@
           </div>
         </div>
 
-        <!-- JOIN TABLE OVERLAY. -->
+        <!-- JOIN TABLE OVERLAY -->
         <div class="join-table-overlay" *ngIf="showJoinTableOverlay">
           <div class="join-table-content">
             <h3>Join Table</h3>
             <label>Select Table:</label>
             <select
-              [(ngModel)]="selectedJoinTable"
+              [(ngModel)]="selectedQuery!.selectedJoinTable"
               (ngModelChange)="RightTable($event)"
             >
               <option *ngFor="let table of tables" [value]="table">
                 {{ table }}
               </option>
             </select>
-
             <div class="column-selection">
               <label>Join On:</label>
               <div class="join-condition">
-                <select [(ngModel)]="selectedLeftColumn">
-                  <option *ngFor="let col of columns" [value]="col">
+                <select [(ngModel)]="selectedQuery!.selectedLeftColumn">
+                  <option
+                    *ngFor="let col of selectedQuery?.columnList || []"
+                    [value]="col"
+                  >
                     {{ col }}
                   </option>
                 </select>
                 <span>=</span>
-                <select [(ngModel)]="selectedRightColumn">
-                  <option *ngFor="let col of rightcolumns" [value]="col">
+                <select [(ngModel)]="selectedQuery!.selectedRightColumn">
+                  <option
+                    *ngFor="let col of selectedQuery?.rightColumns || []"
+                    [value]="col"
+                  >
                     {{ col }}
                   </option>
                 </select>
               </div>
             </div>
-
             <label>Join Type:</label>
-            <select [(ngModel)]="selectedJoinType">
+            <select [(ngModel)]="selectedQuery!.selectedJoinType">
               <option *ngFor="let join of joinTypes" [value]="join">
                 {{ join }}
               </option>
             </select>
-            <label>Columns to Include:</label>
-            <select [(ngModel)]="selectedJoinColumns">
-              <option *ngFor="let col of columns" [value]="col">
-                {{ col }}
-              </option>
-            </select>
-
             <div class="buttons">
               <button (click)="confirmJoinTable()">Confirm</button>
               <button (click)="closeJoinTableOverlay()">Close</button>
@@ -317,7 +309,7 @@
           </div>
         </div>
 
-        <!-- APPEND TABLE OVERLAY. -->
+        <!-- APPEND TABLE OVERLAY -->
         <div class="append-table-overlay" *ngIf="showAppendTableOverlay">
           <div class="append-table-overlay-content">
             <h4>Append Table</h4>
@@ -339,7 +331,7 @@
           </div>
         </div>
 
-        <!-- CUSTOM OPERATIONS OVERLAY. -->
+        <!-- CUSTOM OPERATIONS OVERLAY -->
         <div class="custom-oper-overlay" *ngIf="showCustomOperationOverlay">
           <div class="custom-oper-overlay-content">
             <h4>Custom Operation</h4>
@@ -357,14 +349,13 @@
           </div>
         </div>
 
-        <!-- FILTER ROWS OVERLAY. -->
+        <!-- FILTER ROWS OVERLAY -->
         <div class="filter-row-overlay" *ngIf="showFilterRowsOverlay">
           <div class="filter-row-overlay-content">
             <h4>Filter Rows</h4>
             <div *ngFor="let filter of filters; let i = index">
               <div class="filter-row-main">
                 <p>Where</p>
-                <!-- Select Column -->
                 <select
                   [(ngModel)]="filter.column"
                   (change)="updateOperations(i)"
@@ -376,7 +367,6 @@
                     {{ column.name }}
                   </option>
                 </select>
-                <!-- Select Operation -->
                 <select
                   [(ngModel)]="filter.operation"
                   (change)="updateValues(i)"
@@ -388,7 +378,6 @@
                     {{ op }}
                   </option>
                 </select>
-                <!-- Select Value -->
                 <select [(ngModel)]="filter.value">
                   <option
                     *ngFor="let val of filter.availableValues"
@@ -397,7 +386,6 @@
                     {{ val }}
                   </option>
                 </select>
-                <!-- AND/OR Dropdown -->
                 <select
                   [(ngModel)]="filter.condition"
                   *ngIf="i !== filters.length - 1"
@@ -406,7 +394,6 @@
                   <option value="OR">OR</option>
                 </select>
               </div>
-              <!-- Remove Button -->
               <button
                 class="filter-row-remove-btn"
                 (click)="removeFilter(i)"
@@ -415,11 +402,9 @@
                 Remove
               </button>
             </div>
-            <!-- Add Filter Button -->
             <button class="filter-row-add-btn" (click)="addFilter()">
               Add Filter
             </button>
-            <!-- Actions -->
             <div class="filter-row-actions">
               <button (click)="clearFilters()">Clear</button>
               <button (click)="applyFilters()">Apply Filters</button>
@@ -428,7 +413,7 @@
           </div>
         </div>
 
-        <!-- GROUP AND SUMMARIZE OVERLAY. -->
+        <!-- GROUP AND SUMMARIZE OVERLAY -->
         <div class="gas-overlay" *ngIf="showGroupSummarizeOverlay">
           <div class="gas-overlay-content">
             <h4>Group and Summarize</h4>
@@ -436,7 +421,6 @@
               *ngFor="let group of groupings; let i = index"
               class="gas-grouping-container"
             >
-              <!-- Label and Dropdown for Group By Column -->
               <label>Group By Column:</label>
               <select [(ngModel)]="group.groupByColumn">
                 <option value="" disabled selected>Select a column</option>
@@ -447,8 +431,6 @@
                   {{ column.name }}
                 </option>
               </select>
-
-              <!-- Label and Dropdown for Aggregate Function -->
               <label>Aggregate Function:</label>
               <select [(ngModel)]="group.aggregateFunction">
                 <option value="" disabled selected>Select a function</option>
@@ -456,8 +438,6 @@
                   {{ func }}
                 </option>
               </select>
-
-              <!-- Label and Dropdown for Aggregate Column -->
               <label>Column to Apply Aggregation On:</label>
               <select [(ngModel)]="group.aggregateColumn">
                 <option value="" disabled selected>Select a column</option>
@@ -468,8 +448,6 @@
                   {{ column.name }}
                 </option>
               </select>
-
-              <!-- Remove Button -->
               <button
                 class="gas-remove-btn"
                 (click)="removeGrouping(i)"
@@ -478,13 +456,9 @@
                 Remove
               </button>
             </div>
-
-            <!-- Add Grouping Button -->
             <button class="gas-add-btn" (click)="addGrouping()">
               Add Grouping
             </button>
-
-            <!-- Actions -->
             <div class="gas-actions">
               <button (click)="clearGroupings()">Clear</button>
               <button (click)="applyGroupings()">Apply</button>
@@ -493,52 +467,44 @@
           </div>
         </div>
 
-        <!-- DIV FOR SHOWING SELECTED TABLE AND COLUMNS. -->
-        <div *ngIf="selectedTable" class="selected-info">
+        <!-- SELECTED INFO -->
+        <div *ngIf="selectedQuery?.selectedTable" class="selected-info">
           <div>
             <p>
-              <i class="fa-solid fa-database opIcons" id="table"></i>Select
-              <span (click)="editTable()" class="highlightValues">{{
-                selectedTable
-              }}</span>
-              Table
               <i class="fa-solid fa-database opIcons"></i>Select
               <span (click)="editTable()" class="highlightValues">{{
-                selectedTable
+                selectedQuery?.selectedTable
               }}</span>
-              Table
+              table
             </p>
           </div>
-
-          <div *ngIf="selectedColumns.length > 0">
+          <div
+            *ngIf="selectedQuery && selectedQuery.selectedColumns.length > 0"
+          >
             <div>
-              <i class="fa-solid fa-table-columns opIcons" id="column"></i
-              >Selected
+              <i class="fa-solid fa-table-columns opIcons"></i>Selected
               <span (click)="editColumn()" class="highlightValues"
-                >{{ selectedColumns.length }} Columns</span
+                >{{ selectedQuery.selectedColumns.length }} Columns</span
               >
             </div>
           </div>
-          <div *ngIf="selectedColumns.length > 0">
-            <div class="DisplayFilter">
-              <i class="fa-solid fa-filter opIcons" id="filter"></i> Filter
-              Selected:
-              <span
-                (click)="editFilter()"
-                class="highlightValues"
-                *ngFor="let column of selectedColumns"
-              >
-                {{ column }}
-              </span>
+          <div
+            *ngIf="selectedQuery && selectedQuery.selectedJoinTable.length > 0"
+          >
+            <div>
+              <i class="fa-solid fa-circle-half-stroke opIcons"></i>
+              <span (click)="editJoin()" class="highlightValues">{{
+                selectedQuery.selectedJoinType
+              }}</span>
+              join
+              <span (click)="editJoin()" class="highlightValues">{{
+                selectedQuery.selectedJoinTable
+              }}</span>
+              table
             </div>
           </div>
         </div>
-
-        <!-- RIGHT PANEL OPERATION CONTAINER ENDS HERE. -->
       </div>
-      <!-- RIGHT PANEL ENDS HERE.   -->
     </div>
-
-    <!-- CONTAINER ENDS HERE.  -->
   </div>
 </div>

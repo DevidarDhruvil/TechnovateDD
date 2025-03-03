@@ -10,36 +10,33 @@
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  overflow: hidden;
 }
 
-/* Ensure .container flexbox is well-defined */
 .container {
   display: flex;
-  width: 100%; /* Full viewport width */
-  height: 100%; /* Full viewport height */
+  width: 100%;
+  height: 100%;
 }
 
-/* Adjust left panel, right panel, and center for flexible layout */
 .left-panel,
-.rightpanel,
+.right-pannel,
 .center {
-  flex-shrink: 0; /* Prevent shrinking */
+  flex-shrink: 0;
 }
 
 .left-panel {
-  flex-basis: 20%; /* Take up 20% of the container */
+  flex-basis: 20%;
   border-left: 1px solid black;
 }
 
 .right-pannel {
-  flex-basis: 20%; /* Take up 20% of the container */
+  flex-basis: 20%;
 }
 
 .center {
+  flex-grow: 1;
   position: relative;
   top: 55px;
-  flex-grow: 1;
   width: 60%;
   height: 100vh;
   border: 1px solid #ccc;
@@ -48,13 +45,13 @@
   margin: 6px;
   overflow: hidden;
   display: flex;
-  flex-direction: column; /* Align children in a column */
-  align-items: center; /* Align content to the top-left */
+  flex-direction: column;
+  align-items: center;
 }
 
 .table-container::-webkit-scrollbar {
-  width: 0.7rem;
-  height: 0.7rem;
+  width: 8px;
+  height: 8px;
 }
 
 .table-container::-webkit-scrollbar-thumb {
@@ -76,9 +73,9 @@ table {
 
 .table-container {
   width: 100%;
-  max-height: 600px; /* Set max height to make scrolling work */
-  overflow-x: auto; /* Horizontal scrolling */
-  overflow-y: auto; /* Vertical scrolling */
+  max-height: 600px;
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
 td {
@@ -86,6 +83,7 @@ td {
   text-align: center;
   border: 1px solid #ccc;
 }
+
 th {
   padding: 8px;
   position: sticky;
@@ -96,7 +94,6 @@ th {
   border: 1px solid #ccc;
 }
 
-/* Ensure no large margins or paddings causing overflow */
 ul {
   list-style: none;
   margin-bottom: 0%;
@@ -134,13 +131,11 @@ hr {
   padding-right: 5%;
   padding-bottom: 1.5%;
   border-radius: 8px;
-  /* visibility: hidden; */
 }
 
 #addQueryBtn:hover,
 #addchartBtn:hover,
 #adddashboardBtn:hover {
-  /* border: none; */
   visibility: visible;
 }
 
@@ -196,23 +191,12 @@ button {
   background: #f0f0f0;
 }
 
-.overlay ul li:last-child {
-  border-bottom: none;
-}
-
 .overlay ul li i {
   opacity: 0.5;
   margin-right: 8px;
   font-size: 1.2em;
 }
 
-/* Make overlay visible */
-.overlay.ng-star-inserted {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Centered Overlays */
 .table-overlay,
 .column-overlay,
 .add-column-overlay,
@@ -249,7 +233,7 @@ button {
   list-style: none;
   padding: 0;
   margin: 6px;
-  max-height: 200px; /* Adjust height as needed */
+  max-height: 200px;
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid #ccc;
@@ -286,7 +270,6 @@ input[type="checkbox"] {
   margin-right: 5px;
 }
 
-/* Add Column Overlay */
 .add-column-content label {
   display: block;
   text-align: left;
@@ -322,7 +305,6 @@ input[type="checkbox"] {
   cursor: pointer;
 }
 
-/* Join Table Overlay */
 .join-table-content {
   background: white;
   padding: 20px;
@@ -434,13 +416,10 @@ input[type="checkbox"] {
   border-radius: 4px;
 }
 
-/* Right Panel Specific Styles */
 .queriestext {
   border-radius: 6px;
-  border-color: black;
   border: none;
   background-color: #eaeaea;
-  border-width: 0.2px;
   margin-left: 6px;
   padding: 1px;
 }
@@ -449,15 +428,14 @@ input[type="checkbox"] {
   margin: 4px;
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 10px;
-  /* border-width: 0.2px; */
   background-color: white;
   font-weight: 400;
-  padding: 4px 8px 4px 8px;
-  transition: background-color 0.3s ease; /* Smooth transition */
+  padding: 4px 8px;
+  transition: background-color 0.3s ease;
 }
 
 .addOperations:active {
-  background-color: #eaeaea; /* Changes while clicking */
+  background-color: #eaeaea;
 }
 
 .detail-box {
@@ -486,19 +464,12 @@ input[type="checkbox"] {
 }
 
 .selected-info {
-  /* background: #f4f4f4; */
   padding-top: 0px;
   padding-left: 10px;
   border-radius: 8px;
   font-weight: 380;
-  font-size: 15px;
-  /* box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); */
+  font-size: 13px;
   margin-top: 10px;
-}
-
-/* Filter Row Overlay */
-.filter-row-main {
-  display: flex;
 }
 
 .filter-row-overlay-content {
@@ -552,7 +523,6 @@ input[type="checkbox"] {
   border-radius: 4px;
 }
 
-/* Group and Summarize Overlay */
 .gas-overlay-content {
   background-color: white;
   padding: 20px;
@@ -628,15 +598,11 @@ label {
   border-radius: 4px;
 }
 
-/* NEW: Improved Left Panel Query Styles */
-
 .queryItem {
   display: flex;
-  /* justify-content: space-between; */
   padding: 3px;
   margin-left: 13px;
   padding-top: 0px;
-  /* border-bottom: 1px solid #ccc; */
 }
 
 .delete-button {
@@ -648,7 +614,6 @@ label {
   left: 0%;
   background: none;
   border: none !important;
-  /* visibility: hidden; */
 }
 
 .queryItem button.query-button {
@@ -670,13 +635,11 @@ label {
 }
 
 .queryItem button.query-button.selected-query {
-  /* background-color: #e8e8e8; */
   font-weight: 600;
   color: #000;
   background-color: #eaeaea;
 }
 
-/* NEW: Improved Disabled Styles for Right Panel */
 .queriestext:disabled {
   background-color: #f7f7f7;
   color: #999;
@@ -695,20 +658,12 @@ label {
   font-family: "IBM Plex Sans", sans-serif;
   font-size: 30px;
   color: #333;
-  /* border-bottom: 1px solid #ccc; */
 }
 
 .queriestext {
   text-align: center;
   padding: 2px;
   margin-right: 2px;
-}
-
-.selectedOnes {
-  font-weight: 400;
-  display: flex;
-  justify-content: space-evenly;
-  opacity: 1;
 }
 
 .opIcons {
@@ -725,56 +680,31 @@ label {
 }
 
 .highlightValues {
-  display: inline-block;
-  max-width: 100px;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  white-space: normal;
   cursor: pointer;
   width: fit-content;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-radius: 10px;
+  border-radius: 9px;
   border-width: 1px;
   border-style: solid;
-  border-color: rgb(218, 8, 8, 0.3);
-  background-color: rgb(255, 186, 141, 0.2);
-  padding-top: 0.2rem;
-  padding-bottom: 0.2rem;
-  padding-left: 0.2rem;
-  padding-right: 0.2rem;
+  border-color: rgba(218, 8, 8, 0.3);
+  background-color: rgba(255, 186, 141, 0.2);
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
   font-family: monospace;
   font-size: 0.8rem;
-  line-height: 1rem;
+  line-height: 1.5rem;
   color: rgb(218, 8, 8);
   opacity: 0.9;
-  position: relative;
-  top: 2.7px;
-}
-.DisplayFilter {
-  padding: 0px;
-  flex-wrap: wrap; /* Allows items to wrap */
-  margin-top: 11px;
-}
-#filter,
-#column,
-#table {
-  margin: 0px;
-  padding-right: 9px;
-}
-.opIcons {
-  opacity: 0.5;
-  font-size: 1em;
-  margin-right: 10px;
 }
 
-/* CSS for SQL Buttons */
-/* CSS for SQL Buttons */
 .execSql-buttons {
   position: absolute;
-  top: 85px;
-  right: 270px;
+  top: 14%;
+  right: 20%;
   display: flex;
   gap: 10px;
 }
@@ -819,7 +749,7 @@ label {
   display: flex;
   flex-direction: column;
   width: 500px; /* Fixed width, narrower than height */
-  height: 600px; /* Taller height for a square/rectangle shape */
+  height: 300px; /* Taller height for a square/rectangle shape */
   max-height: 90vh; /* Prevent overflow beyond viewport height */
   overflow-y: auto; /* Enable vertical scrolling for long content */
 }

@@ -46,8 +46,8 @@ interface Filter {
   selector: 'app-root',
   standalone: true,
   imports: [CommonModule, FormsModule, HeaderComponent],
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
+  templateUrl: './dashboard.component.html',
+  styleUrls: ['./dashboard.component.css'],
 })
 export class DashboardComponent implements OnInit {
   title = 'DynamicDashboard';
@@ -177,9 +177,9 @@ export class DashboardComponent implements OnInit {
   tabledata: any[] = [];
   columns: string[] = [];
   selectedColumns: string[] = [];
- 
+
   // Existing methods...
- 
+
   sortTable(column: string) {
     if (this.sortColumn === column) {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
@@ -187,11 +187,11 @@ export class DashboardComponent implements OnInit {
       this.sortColumn = column;
       this.sortDirection = 'asc';
     }
- 
+
     this.selectedQuery?.tableData.sort((a, b) => {
       const aValue = a[column];
       const bValue = b[column];
- 
+
       // Function to classify and extract text and numbers
       const classifyValue = (value: string) => {
         if (/^\d+$/.test(value)) {
@@ -207,10 +207,10 @@ export class DashboardComponent implements OnInit {
         }
         return { type: 'string', value: value };
       };
- 
+
       const aParts = classifyValue(aValue);
       const bParts = classifyValue(bValue);
- 
+
       // Numbers come first
       if (aParts.type === 'number' && bParts.type === 'number') {
         return this.sortDirection === 'asc'
@@ -223,7 +223,7 @@ export class DashboardComponent implements OnInit {
       if (aParts.type !== 'number' && bParts.type === 'number') {
         return this.sortDirection === 'asc' ? 1 : -1;
       }
- 
+
       // Sorting logic for strings with numbers
       if (
         aParts.type === 'stringWithNumber' &&
@@ -242,14 +242,13 @@ export class DashboardComponent implements OnInit {
           ? (aParts.number ?? 0) - (bParts.number ?? 0)
           : (bParts.number ?? 0) - (aParts.number ?? 0);
       }
- 
+
       // Pure strings should be sorted alphabetically
       return this.sortDirection === 'asc'
         ? (aParts.value as string).localeCompare(bParts.value as string)
         : (bParts.value as string).localeCompare(aParts.value as string);
     });
   }
- 
 
   getTableNames() {
     this.apiService.GetTableApi([]).subscribe((res: any) => {
@@ -328,11 +327,11 @@ export class DashboardComponent implements OnInit {
       this.apiService.GetData(query.selectedTable).subscribe((res: any) => {
         query.allColumns = Object.keys(res[0]);
         query.tableData = res;
-        query.selectedColumns = query.selectedColumns.length
-          ? query.selectedColumns.filter((col) =>
-              query.allColumns.includes(col)
-            )
-          : [...query.allColumns];
+        // query.selectedColumns = query.selectedColumns.length
+        //   ? query.selectedColumns.filter((col) =>
+        //       query.allColumns.includes(col)
+        //     )
+        //   : [...query.allColumns];
       });
     }
   }
@@ -400,7 +399,7 @@ export class DashboardComponent implements OnInit {
         } else {
           query.allColumns = Object.keys(res[0]);
           query.tableData = res;
-          query.selectedColumns = [...query.allColumns];
+          // query.selectedColumns = [...query.allColumns];
         }
       });
     }
@@ -632,24 +631,23 @@ export class DashboardComponent implements OnInit {
     // If at least a table is selected, consider it as having operations
     return true;
   }
- 
+
   generateSqlTemplate() {
     debugger;
     let sql = '';
- 
-    // Begin with SELECT statement
-    if(this.selectedQuery){
 
+    // Begin with SELECT statement
+    if (this.selectedQuery) {
       if (this.selectedQuery.selectedColumns.length > 0) {
         sql += `SELECT ${this.selectedQuery.selectedColumns.join(', ')}\n`;
       } else {
         sql += 'SELECT *\n';
       }
     }
- 
+
     // Add FROM clause
     sql += `FROM ${this.selectedQuery?.selectedTable}\n`;
- 
+
     // Add JOIN if present
     if (
       this.selectedQuery?.selectedJoinTable &&
@@ -660,7 +658,7 @@ export class DashboardComponent implements OnInit {
       const joinType = this.selectedQuery?.selectedJoinType.toUpperCase();
       sql += `${joinType} ${this.selectedQuery?.selectedJoinTable} ON ${this.selectedQuery?.selectedTable}.${this.selectedQuery?.selectedLeftColumn} = ${this.selectedQuery?.selectedJoinTable}.${this.selectedQuery?.selectedRightColumn}\n`;
     }
- 
+
     // Add WHERE clause for filters
     if (
       this.filters.some(
@@ -670,12 +668,12 @@ export class DashboardComponent implements OnInit {
     ) {
       sql += 'WHERE ';
       let filterClauses = [];
- 
+
       for (let i = 0; i < this.filters.length; i++) {
         const filter = this.filters[i];
         if (filter.column && filter.operation && filter.value !== undefined) {
           let clause = '';
- 
+
           // Format the condition based on operation type
           switch (filter.operation) {
             case 'contains':
@@ -718,44 +716,44 @@ export class DashboardComponent implements OnInit {
             default:
               clause = `${filter.column} ${filter.operation} '${filter.value}'`;
           }
- 
+
           filterClauses.push(clause);
         }
       }
- 
+
       // Join filters with AND/OR
       if (filterClauses.length > 0) {
         sql += filterClauses.join(` ${this.filters[0].condition} `);
       }
       sql += '\n';
     }
- 
+
     // Add GROUP BY and aggregation if present
     if (this.groupings.some((g) => g.groupByColumn)) {
       const groupColumns = this.groupings
         .filter((g) => g.groupByColumn)
         .map((g) => g.groupByColumn);
- 
+
       if (groupColumns.length > 0) {
         sql += `GROUP BY ${groupColumns.join(', ')}\n`;
       }
- 
+
       // Add HAVING clause for aggregate filters if needed
       // (This would be more complex and would depend on your specific implementation)
     }
- 
+
     // Add any custom expressions
     if (this.customExpression) {
       sql += `-- Custom Expression: ${this.customExpression}\n`;
     }
- 
+
     this.sqlTemplate = sql;
   }
- 
+
   closeSqlTemplateOverlay() {
     this.showSqlTemplateOverlay = false;
   }
- 
+
   copySqlToClipboard() {
     navigator.clipboard.writeText(this.sqlTemplate).then(
       () => {

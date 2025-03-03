@@ -11,7 +11,7 @@ export class LoginComponent {
 
   login(username: string, password: string) {
     // Replace these hard-coded credentials with your own authentication logic
-    if (username === 'admin' && password === 'password') {
+    if (username === 'admin' && password === 'pass') {
       sessionStorage.setItem('isLoggedIn', 'true');
       this.router.navigate(['/dashboard']);
     } else {
