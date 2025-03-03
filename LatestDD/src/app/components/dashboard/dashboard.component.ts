@@ -11,30 +11,172 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../Services/api.service';
 import { HeaderComponent } from '../header/header.component';
 
-// Extend the Query interface
 interface Query {
   id: number;
   name: string;
-  selectedTable?: string;
-  columns?: string[];
-  tableData?: any[];
+  selectedTable: string;
+  selectedColumns: string[];
+  allColumns: string[];
+  columnList: string[];
+  tableData: any[];
+  rightTable: string;
+  rightColumns: string[];
+  selectedJoinTable: string;
+  selectedJoinType: string;
+  selectedLeftColumn: string;
+  selectedRightColumn: string;
+}
+
+interface FilterColumn {
+  name: string;
+  type: 'string' | 'DateTime' | 'integer' | 'decimal';
+  values: string[] | number[];
+}
+
+interface Filter {
+  column: string;
+  operation: string;
+  value: string | number;
+  availableOperations: string[];
+  availableValues: (string | number)[];
+  condition: 'AND' | 'OR';
 }
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [CommonModule, FormsModule, HeaderComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
 })
 export class DashboardComponent implements OnInit {
-  title = 'DynamicDahboard';
+  title = 'DynamicDashboard';
+  queries: Query[] = [];
+  queryCount = 0;
+  selectedQuery: Query | null = null;
+  queryTitle = '';
+  tables: string[] = [];
+  apiService = inject(ApiService);
+
+  @ViewChild('overlay') overlay!: ElementRef;
+
+  // Overlay flags
+  showOverlay = false;
+  showTableOverlay = false;
+  showColumnOverlay = false;
+  showAddColumnOverlay = false;
+  showJoinTableOverlay = false;
+  showAppendTableOverlay = false;
+  showCustomOperationOverlay = false;
+  showFilterRowsOverlay = false;
+  showGroupSummarizeOverlay = false;
+  showSqlTemplateOverlay = false;
+
+  // Shared options
+  joinTypes = ['inner', 'left', 'right', 'full'];
+  columnTypes = [
+    'String',
+    'Text',
+    'Integer',
+    'Decimal',
+    'Date',
+    'Time',
+    'Datetime',
+  ];
+  filterColumns: FilterColumn[] = [
+    {
+      name: 'Customer Name',
+      type: 'string',
+      values: ['Alice', 'Bob', 'Charlie'],
+    },
+    {
+      name: 'Order Date',
+      type: 'DateTime',
+      values: ['2024-01-01', '2024-01-15', '2024-02-01'],
+    },
+    { name: 'Quantity', type: 'integer', values: [1, 2, 5, 10] },
+    { name: 'Price', type: 'decimal', values: [10.99, 20.5, 100.75] },
+  ];
+  operations: { [key: string]: string[] } = {
+    string: [
+      'is',
+      'is not',
+      'contains',
+      'does not contain',
+      'starts with',
+      'ends with',
+      'is set',
+      'is not set',
+    ],
+    DateTime: [
+      'equals',
+      'not equals',
+      'greater than',
+      'greater than or equals',
+      'less than',
+      'less than or equals',
+      'between',
+      'within',
+    ],
+    integer: [
+      'equals',
+      'not equals',
+      'greater than',
+      'greater than or equals',
+      'less than',
+      'less than or equals',
+      'between',
+    ],
+    decimal: [
+      'equals',
+      'not equals',
+      'greater than',
+      'greater than or equals',
+      'less than',
+      'less than or equals',
+      'between',
+    ],
+  };
+  aggregateFunctions = [
+    'Count of',
+    'Sum of',
+    'Average of',
+    'Minimum of',
+    'Maximum of',
+    'Unique count of',
+  ];
+
+  // Temporary state for overlays
+  newColumnExpression = '';
+  newColumnName = '';
+  newColumnType = '';
+  selectedTableToAppend = '';
+  dropDuplicates = 'No';
+  customExpression = '';
+  filters: Filter[] = [
+    {
+      column: '',
+      operation: '',
+      value: '',
+      availableOperations: [],
+      availableValues: [],
+      condition: 'AND',
+    },
+  ];
+  groupings = [
+    { groupByColumn: '', aggregateFunction: '', aggregateColumn: '' },
+  ];
 
   ngOnInit(): void {
-    this.gettabledata();
+    this.getTableNames();
   }
 
   sortColumn: string = '';
   sortDirection: 'asc' | 'desc' = 'asc';
+
+  tabledata: any[] = [];
+  columns: string[] = [];
+  selectedColumns: string[] = [];
 
   // Existing methods...
 
@@ -46,7 +188,7 @@ export class DashboardComponent implements OnInit {
       this.sortDirection = 'asc';
     }
 
-    this.tabledata.sort((a, b) => {
+    this.selectedQuery?.tableData.sort((a, b) => {
       const aValue = a[column];
       const bValue = b[column];
 
@@ -108,194 +250,369 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  Apidata = inject(ApiService);
-  payload: [] = [];
-  @ViewChild('overlay') overlay!: ElementRef;
+  getTableNames() {
+    this.apiService.GetTableApi([]).subscribe((res: any) => {
+      this.tables = res;
+    });
+  }
 
-  // Overlays and flags (unchanged)
-  showOverlay = false;
-  showTableOverlay = false;
-  showColumnOverlay = false;
-  showAddColumnOverlay = false;
-  showJoinTableOverlay = false;
-  showAppendTableOverlay = false;
-  showCustomOperationOverlay = false;
-  showFilterRowsOverlay = false;
-  showGroupSummarizeOverlay = false;
-  showSqlTemplateOverlay = false; // New flag for SQL template overlay
+  addQueries() {
+    this.queryCount++;
+    const newQuery: Query = {
+      id: this.queryCount,
+      name: `Query ${this.queryCount}`,
+      selectedTable: '',
+      selectedColumns: [],
+      allColumns: [],
+      columnList: [],
+      tableData: [],
+      rightTable: '',
+      rightColumns: [],
+      selectedJoinTable: '',
+      selectedJoinType: '',
+      selectedLeftColumn: '',
+      selectedRightColumn: '',
+    };
+    this.queries.push(newQuery);
+    this.openQuery(newQuery);
+  }
 
-  tables: any[] = [];
-  selectedTable: string = '';
+  openQuery(query: Query) {
+    this.selectedQuery = query;
+    this.queryTitle = query.name;
 
-  columns: string[] = [];
-  //Just for storing of column names and showing in column dropdown.
-  columnList: string[] = [];
-  selectedColumns: string[] = [];
-  rightcolumns: string[] = [];
+    if (query.selectedTable) {
+      if (query.selectedJoinTable && query.tableData.length === 0) {
+        this.fetchJoinData();
+      } else if (query.tableData.length === 0) {
+        this.fetchTableData();
+      }
+    }
+  }
 
-  tabledata: any[] = [];
+  updateSelectedQueryName() {
+    if (this.selectedQuery) {
+      this.selectedQuery.name = this.queryTitle;
+    }
+  }
 
-  // SQL related properties
-  sqlTemplate: string = '';
-  hasOperations: boolean = false;
+  deleteQuery(queryId: number) {
+    this.queries = this.queries.filter((q) => q.id !== queryId);
+    if (this.selectedQuery?.id === queryId) {
+      this.selectedQuery = null;
+      this.queryTitle = '';
+    }
+  }
 
-  // ***** Query Management *****
-  queries: Query[] = [];
-  queryCount: number = 0;
-  selectedQuery: Query | null = null;
-  queryTitle: string = '';
+  selectTable(table: string) {
+    if (this.selectedQuery) {
+      this.selectedQuery.selectedTable = table;
+      this.fetchColumnNames(table);
+      this.fetchTableData();
+    }
+    this.closeTableOverlay();
+  }
 
-  // (Other properties remain unchanged)
-  filterColumns = [
-    {
-      name: 'Customer Name',
-      type: 'string',
-      values: ['Alice', 'Bob', 'Charlie'],
-    },
-    {
-      name: 'Order Date',
-      type: 'DateTime',
-      values: ['2024-01-01', '2024-01-15', '2024-02-01'],
-    },
-    { name: 'Quantity', type: 'integer', values: [1, 2, 5, 10] },
-    { name: 'Price', type: 'decimal', values: [10.99, 20.5, 100.75] },
-  ];
+  fetchColumnNames(table: string) {
+    this.apiService.GetColumnApi(table).subscribe((res: any) => {
+      if (this.selectedQuery) {
+        this.selectedQuery.columnList = res;
+      }
+    });
+  }
 
-  operations: any = {
-    string: [
-      'is',
-      'is not',
-      'contains',
-      'does not contain',
-      'starts with',
-      'ends with',
-      'is set',
-      'is not set',
-    ],
-    DateTime: [
-      'equals',
-      'not equals',
-      'greater than',
-      'greater than or equals',
-      'less than',
-      'less than or equals',
-      'between',
-      'within',
-    ],
-    integer: [
-      'equals',
-      'not equals',
-      'greater than',
-      'greater than or equals',
-      'less than',
-      'less than or equals',
-      'between',
-    ],
-    decimal: [
-      'equals',
-      'not equals',
-      'greater than',
-      'greater than or equals',
-      'less than',
-      'less than or equals',
-      'between',
-    ],
-  };
+  fetchTableData() {
+    if (this.selectedQuery && this.selectedQuery.selectedTable) {
+      const query = this.selectedQuery;
+      this.apiService.GetData(query.selectedTable).subscribe((res: any) => {
+        query.allColumns = Object.keys(res[0]);
+        query.tableData = res;
+        query.selectedColumns = query.selectedColumns.length
+          ? query.selectedColumns.filter((col) =>
+              query.allColumns.includes(col)
+            )
+          : [...query.allColumns];
+      });
+    }
+  }
 
-  filters: any = [
-    {
+  toggleColumnSelection(column: string, event: Event) {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    if (this.selectedQuery) {
+      if (isChecked && !this.selectedQuery.selectedColumns.includes(column)) {
+        this.selectedQuery.selectedColumns.push(column);
+      } else if (!isChecked) {
+        this.selectedQuery.selectedColumns =
+          this.selectedQuery.selectedColumns.filter((col) => col !== column);
+      }
+    }
+  }
+
+  closeTableOverlay() {
+    this.showTableOverlay = false;
+  }
+
+  closeColumnOverlay() {
+    this.showColumnOverlay = false;
+  }
+
+  RightTable(table: string) {
+    if (this.selectedQuery) {
+      this.selectedQuery.rightTable = table;
+      this.fetchRightColumnNames(table);
+    }
+  }
+
+  fetchRightColumnNames(table: string) {
+    this.apiService.GetColumnApi(table).subscribe((res: any) => {
+      if (this.selectedQuery) {
+        this.selectedQuery.rightColumns = res;
+      }
+    });
+  }
+
+  confirmJoinTable() {
+    if (this.selectedQuery) {
+      this.fetchJoinData();
+    }
+    this.showJoinTableOverlay = false;
+  }
+
+  fetchJoinData() {
+    if (
+      this.selectedQuery &&
+      this.selectedQuery.selectedTable &&
+      this.selectedQuery.selectedJoinTable
+    ) {
+      const query = this.selectedQuery;
+      const joinDetails = {
+        JoinTable: query.selectedJoinTable,
+        LeftColumn: query.selectedLeftColumn,
+        RightColumn: query.selectedRightColumn,
+        JoinType: query.selectedJoinType,
+        LeftTable: query.selectedTable,
+      };
+      this.apiService.GetJoinTableData(joinDetails).subscribe((res: any) => {
+        if (res.length === 0) {
+          query.tableData = [];
+          query.selectedColumns = [];
+        } else {
+          query.allColumns = Object.keys(res[0]);
+          query.tableData = res;
+          query.selectedColumns = [...query.allColumns];
+        }
+      });
+    }
+  }
+
+  confirmAddColumn() {
+    console.log('New Column:', {
+      Expression: this.newColumnExpression,
+      Name: this.newColumnName,
+      Type: this.newColumnType,
+    });
+    this.closeAddColumnOverlay();
+  }
+
+  closeAddColumnOverlay() {
+    this.showAddColumnOverlay = false;
+    this.newColumnExpression = '';
+    this.newColumnName = '';
+    this.newColumnType = '';
+  }
+
+  confirmAppendTable() {
+    console.log('Append Table:', {
+      Table: this.selectedTableToAppend,
+      DropDuplicates: this.dropDuplicates,
+    });
+    this.closeAppendTableOverlay();
+  }
+
+  closeAppendTableOverlay() {
+    this.showAppendTableOverlay = false;
+    this.selectedTableToAppend = '';
+    this.dropDuplicates = 'No';
+  }
+
+  confirmCustomOperation() {
+    console.log('Custom Expression:', this.customExpression);
+    this.closeCustomOperationOverlay();
+  }
+
+  closeCustomOperationOverlay() {
+    this.showCustomOperationOverlay = false;
+    this.customExpression = '';
+  }
+
+  addFilter() {
+    this.filters.push({
       column: '',
       operation: '',
       value: '',
       availableOperations: [],
       availableValues: [],
       condition: 'AND',
-    },
-  ];
-
-  aggregateFunctions = [
-    'Count of',
-    'Sum of',
-    'Average of',
-    'Minimum of',
-    'Maximum of',
-    'Unique count of',
-  ];
-  groupings = [
-    { groupByColumn: '', aggregateFunction: '', aggregateColumn: '' },
-  ];
-
-  newColumnExpression = '';
-  newColumnName = '';
-  newColumnType = '';
-  columnTypes = [
-    'String',
-    'Text',
-    'Integer',
-    'Decimal',
-    'Date',
-    'Time',
-    'Datetime',
-  ];
-
-  selectedJoinTable = '';
-  selectedLeftColumn = '';
-  selectedRightColumn = '';
-  selectedJoinType = '';
-  selectedJoinColumns: string[] = [];
-  joinTypes = ['Inner Join', 'Left Join', 'Right Join', 'Full Join'];
-
-  selectedTableToAppend: string = '';
-  dropDuplicates: string = 'No';
-  customExpression: string = '';
-
-  chartsCount: number = 0;
-  dashboardCount: number = 0;
-
-  // GETTING TABLE NAMES.
-  gettabledata() {
-    this.Apidata.GetTableApi(this.payload).subscribe(
-      (res: any) => (this.tables = res)
-    );
-  }
-
-  //GETTING COLUMN NAMES.
-  getcolumndata(table1: string) {
-    this.Apidata.GetColumnApi(table1).subscribe((res: any) => {
-      this.columnList = res;
-      this.selectedColumns = [];
     });
   }
 
-  //GETTING COLUMN NAMES FOR RIGHT TABLE IN JOINING.
-  getrightcolumndata(table1: string) {
-    this.Apidata.GetColumnApi(table1).subscribe(
-      (res: any) => (this.rightcolumns = res)
-    );
+  removeFilter(index: number) {
+    this.filters.splice(index, 1);
   }
 
-  //FOR GETTING FULL TABLE DATA.
-  getdata() {
-    this.Apidata.GetData(this.selectedTable).subscribe((res: any) => {
-      this.columns = Object.keys(res[0]);
-      // this.getcolumndata(this.selectedTable);
-      this.tabledata = res;
-      // Ensure selectedColumns updates based on the query's selection
-      if (this.selectedQuery?.columns?.length) {
-        this.selectedColumns = this.selectedQuery.columns.filter((col) =>
-          this.columns.includes(col)
-        );
-      } else {
-        this.columns = [...this.columns]; // Default to all columns
-      }
+  updateOperations(index: number) {
+    const selectedColumn = this.filterColumns.find(
+      (col) => col.name === this.filters[index].column
+    );
+    if (selectedColumn) {
+      this.filters[index].availableOperations =
+        this.operations[selectedColumn.type] || [];
+      this.filters[index].operation = '';
+      this.filters[index].availableValues = selectedColumn.values;
+    }
+  }
+
+  updateValues(index: number) {
+    const selectedColumn = this.filterColumns.find(
+      (col) => col.name === this.filters[index].column
+    );
+    if (selectedColumn) {
+      this.filters[index].availableValues = selectedColumn.values;
+    }
+  }
+
+  clearFilters() {
+    this.filters = [
+      {
+        column: '',
+        operation: '',
+        value: '',
+        availableOperations: [],
+        availableValues: [],
+        condition: 'AND',
+      },
+    ];
+  }
+
+  applyFilters() {
+    console.log('Filters:', this.filters);
+    this.closeFilterRowsOverlay();
+  }
+
+  closeFilterRowsOverlay() {
+    this.showFilterRowsOverlay = false;
+  }
+
+  addGrouping() {
+    this.groupings.push({
+      groupByColumn: '',
+      aggregateFunction: '',
+      aggregateColumn: '',
     });
   }
 
-  RightTable(Rtable: string) {
-    this.getrightcolumndata(Rtable);
+  removeGrouping(index: number) {
+    this.groupings.splice(index, 1);
   }
 
-  // View SQL implementation
+  clearGroupings() {
+    this.groupings = [
+      { groupByColumn: '', aggregateFunction: '', aggregateColumn: '' },
+    ];
+  }
+
+  applyGroupings() {
+    console.log('Groupings:', this.groupings);
+    this.closeGroupSummarizeOverlay();
+  }
+
+  closeGroupSummarizeOverlay() {
+    this.showGroupSummarizeOverlay = false;
+  }
+
+  addCharts() {
+    const chartsContainer = document.getElementById('chartsContainer');
+    if (chartsContainer) {
+      const chartDiv = document.createElement('div');
+      chartDiv.textContent = `Chart ${chartsContainer.children.length + 1}`;
+      chartsContainer.appendChild(chartDiv);
+    }
+  }
+
+  addDashboard() {
+    const dashboardContainer = document.getElementById('dashboardContainer');
+    if (dashboardContainer) {
+      const dashboardDiv = document.createElement('div');
+      dashboardDiv.textContent = `Dashboard ${
+        dashboardContainer.children.length + 1
+      }`;
+      dashboardContainer.appendChild(dashboardDiv);
+    }
+  }
+
+  editTable() {
+    this.showTableOverlay = true;
+  }
+
+  editColumn() {
+    this.showColumnOverlay = true;
+  }
+
+  editJoin() {
+    this.showJoinTableOverlay = true;
+  }
+
+  toggleOverlay(event: Event) {
+    this.showOverlay = !this.showOverlay;
+    event.stopPropagation();
+  }
+
+  openTableOverlay() {
+    this.showTableOverlay = true;
+    this.showOverlay = false;
+  }
+
+  openColumnOverlay() {
+    this.showColumnOverlay = true;
+    this.showOverlay = false;
+  }
+
+  openAddColumnOverlay() {
+    this.showAddColumnOverlay = true;
+    this.showOverlay = false;
+  }
+
+  openJoinTableOverlay() {
+    this.showJoinTableOverlay = true;
+    this.showOverlay = false;
+  }
+
+  openAppendTableOverlay() {
+    this.showAppendTableOverlay = true;
+    this.showOverlay = false;
+  }
+
+  openCustomOperationOverlay() {
+    this.showCustomOperationOverlay = true;
+    this.showOverlay = false;
+  }
+
+  openFilterRowsOverlay() {
+    this.showFilterRowsOverlay = true;
+    this.showOverlay = false;
+  }
+
+  openGroupSummarizeOverlay() {
+    this.showGroupSummarizeOverlay = true;
+    this.showOverlay = false;
+  }
+
+  closeJoinTableOverlay() {
+    this.showJoinTableOverlay = false;
+  }
+
+  hasOperations: boolean = false;
+  sqlTemplate: string = '';
   viewSql() {
     this.hasOperations = this.checkForOperations();
     if (!this.hasOperations) {
@@ -308,7 +625,7 @@ export class DashboardComponent implements OnInit {
   }
   checkForOperations(): boolean {
     // Check if any operations have been performed
-    if (!this.selectedTable) {
+    if (!this.selectedQuery?.selectedTable) {
       return false;
     }
     // If at least a table is selected, consider it as having operations
@@ -320,24 +637,26 @@ export class DashboardComponent implements OnInit {
     let sql = '';
 
     // Begin with SELECT statement
-    if (this.selectedColumns.length > 0) {
-      sql += `SELECT ${this.selectedColumns.join(', ')}\n`;
-    } else {
-      sql += 'SELECT *\n';
+    if (this.selectedQuery) {
+      if (this.selectedQuery.selectedColumns.length > 0) {
+        sql += `SELECT ${this.selectedQuery.selectedColumns.join(', ')}\n`;
+      } else {
+        sql += 'SELECT *\n';
+      }
     }
 
     // Add FROM clause
-    sql += `FROM ${this.selectedTable}\n`;
+    sql += `FROM ${this.selectedQuery?.selectedTable}\n`;
 
     // Add JOIN if present
     if (
-      this.selectedJoinTable &&
-      this.selectedLeftColumn &&
-      this.selectedRightColumn &&
-      this.selectedJoinType
+      this.selectedQuery?.selectedJoinTable &&
+      this.selectedQuery?.selectedLeftColumn &&
+      this.selectedQuery?.selectedRightColumn &&
+      this.selectedQuery?.selectedJoinType
     ) {
-      const joinType = this.selectedJoinType.toUpperCase();
-      sql += `${joinType} ${this.selectedJoinTable} ON ${this.selectedTable}.${this.selectedLeftColumn} = ${this.selectedJoinTable}.${this.selectedRightColumn}\n`;
+      const joinType = this.selectedQuery?.selectedJoinType.toUpperCase();
+      sql += `${joinType} ${this.selectedQuery?.selectedJoinTable} ON ${this.selectedQuery?.selectedTable}.${this.selectedQuery?.selectedLeftColumn} = ${this.selectedQuery?.selectedJoinTable}.${this.selectedQuery?.selectedRightColumn}\n`;
     }
 
     // Add WHERE clause for filters
@@ -446,257 +765,11 @@ export class DashboardComponent implements OnInit {
     );
   }
 
-  // Query Methods
-  addQueries() {
-    this.queryCount = this.queries.length + 1;
-    this.queries.push({
-      id: this.queryCount,
-      name: `Query ${this.queryCount}`,
-    });
-  }
-  openQuery(query: Query) {
-    this.selectedQuery = query;
-    this.queryTitle = query.name;
-
-    if (query.selectedTable) {
-      this.selectedTable = query.selectedTable;
-      this.getcolumndata(query.selectedTable);
-      this.getdata();
-    } else {
-      this.selectedTable = '';
-      this.selectedColumns = [];
-      this.columns = [];
-      this.tabledata = [];
-    }
-  }
-  updateSelectedQueryName() {
-    if (this.selectedQuery) {
-      this.selectedQuery.name = this.queryTitle;
-    }
-  }
-  deleteQuery(queryId: number): void {
-    this.queries = this.queries.filter((query) => query.id !== queryId);
-    // Optional: Confirm deletion with the user
-  }
-
-  toggleOverlay(event: Event) {
-    this.showOverlay = !this.showOverlay;
-    event.stopPropagation();
-  }
-  openTableOverlay() {
-    this.showTableOverlay = true;
-    this.showOverlay = false;
-  }
-  selectTable(table: string) {
-    this.selectedTable = table;
-    if (this.selectedQuery) {
-      this.selectedQuery.selectedTable = table;
-    }
-    this.getcolumndata(table);
-    this.closeTableOverlay();
-    this.getdata();
-    this.showTableOverlay = false;
-  }
-  closeTableOverlay() {
-    this.showTableOverlay = false;
-  }
-
-  openColumnOverlay() {
-    this.showColumnOverlay = true;
-    this.showOverlay = false;
-  }
-  toggleColumnSelection(column: string, event: Event) {
-    const isChecked = (event.target as HTMLInputElement).checked;
-    if (isChecked) {
-      if (!this.selectedColumns.includes(column)) {
-        this.selectedColumns.push(column);
-      }
-    } else {
-      this.selectedColumns = this.selectedColumns.filter(
-        (col) => col !== column
-      );
-    }
-    if (this.selectedQuery) {
-      this.selectedQuery.columns = [...this.selectedColumns];
-    }
-  }
-  confirmColumnSelection() {
-    console.log('Selected Columns:', this.selectedColumns);
-    this.showColumnOverlay = false;
-  }
-  closeColumnOverlay() {
-    this.showColumnOverlay = false;
-  }
-
-  openAddColumnOverlay() {
-    this.showAddColumnOverlay = true;
-    this.showOverlay = false;
-  }
-  confirmAddColumn() {
-    console.log('New Column Details:', {
-      Expression: this.newColumnExpression,
-      Name: this.newColumnName,
-      Type: this.newColumnType,
-    });
-    this.showAddColumnOverlay = false;
-  }
-  closeAddColumnOverlay() {
-    this.showAddColumnOverlay = false;
-  }
-
-  openJoinTableOverlay() {
-    this.showJoinTableOverlay = true;
-    this.showOverlay = false;
-  }
-  confirmJoinTable() {
-    console.log('Join Table Details:', {
-      JoinTable: this.selectedJoinTable,
-      LeftColumn: this.selectedLeftColumn,
-      RightColumn: this.selectedRightColumn,
-      JoinType: this.selectedJoinType,
-      SelectedColumns: this.selectedJoinColumns,
-    });
-    this.showJoinTableOverlay = false;
-  }
-  closeJoinTableOverlay() {
-    this.showJoinTableOverlay = false;
-  }
-
-  openAppendTableOverlay() {
-    this.showAppendTableOverlay = true;
-    this.showOverlay = false;
-  }
-  confirmAppendTable() {
-    console.log('Selected Table to Append:', this.selectedTableToAppend);
-    console.log('Drop Duplicates:', this.dropDuplicates);
-    this.closeAppendTableOverlay();
-  }
-  closeAppendTableOverlay() {
-    this.showAppendTableOverlay = false;
-  }
-
-  openCustomOperationOverlay() {
-    this.showCustomOperationOverlay = true;
-    this.showOverlay = false;
-  }
-  confirmCustomOperation() {
-    console.log('Custom Expression:', this.customExpression);
-    this.closeCustomOperationOverlay();
-  }
-  closeCustomOperationOverlay() {
-    this.showCustomOperationOverlay = false;
-  }
-
-  addCharts() {
-    this.chartsCount++;
-    const newChartDiv = document.createElement('div');
-    newChartDiv.textContent = `charts ${this.chartsCount}`;
-    document.getElementById('chartsContainer')?.appendChild(newChartDiv);
-  }
-  addDashboard() {
-    this.dashboardCount++;
-    const newDashboardDiv = document.createElement('div');
-    newDashboardDiv.textContent = `dashboard ${this.dashboardCount}`;
-    document.getElementById('dashboardContainer')?.appendChild(newDashboardDiv);
-  }
-
-  openFilterRowsOverlay() {
-    this.showFilterRowsOverlay = true;
-    this.showOverlay = false;
-  }
-  closeFilterRowsOverlay() {
-    this.showFilterRowsOverlay = false;
-  }
-  addFilter() {
-    this.filters.push({
-      column: '',
-      operation: '',
-      value: '',
-      availableOperations: [],
-      availableValues: [],
-      condition: 'AND',
-    });
-  }
-  removeFilter(index: number) {
-    this.filters.splice(index, 1);
-  }
-  updateOperations(index: number) {
-    const selectedColumn = this.filterColumns.find(
-      (col) => col.name === this.filters[index].column
-    );
-    if (selectedColumn) {
-      this.filters[index].availableOperations =
-        this.operations[selectedColumn.type] || [];
-      this.filters[index].operation = '';
-      this.filters[index].availableValues = selectedColumn.values;
-    }
-  }
-  updateValues(index: number) {
-    const selectedColumn = this.filterColumns.find(
-      (col) => col.name === this.filters[index].column
-    );
-    if (selectedColumn) {
-      this.filters[index].availableValues = selectedColumn.values;
-    }
-  }
-  clearFilters() {
-    this.filters = [
-      {
-        column: '',
-        operation: '',
-        value: '',
-        availableOperations: [],
-        availableValues: [],
-        condition: 'AND',
-      },
-    ];
-  }
-  applyFilters() {
-    console.log('Applied Filters:', this.filters);
-    this.closeFilterRowsOverlay();
-  }
-
-  openGroupSummarizeOverlay() {
-    this.showGroupSummarizeOverlay = true;
-    this.showOverlay = false;
-  }
-  closeGroupSummarizeOverlay() {
-    this.showGroupSummarizeOverlay = false;
-  }
-  addGrouping() {
-    this.groupings.push({
-      groupByColumn: '',
-      aggregateFunction: '',
-      aggregateColumn: '',
-    });
-  }
-  removeGrouping(index: number) {
-    this.groupings.splice(index, 1);
-  }
-  clearGroupings() {
-    this.groupings = [
-      { groupByColumn: '', aggregateFunction: '', aggregateColumn: '' },
-    ];
-  }
-  applyGroupings() {
-    console.log('Applied Groupings:', this.groupings);
-    this.closeGroupSummarizeOverlay();
-  }
-  editTable() {
-    this.showTableOverlay = true;
-  }
-  editColumn() {
-    this.showColumnOverlay = true;
-  }
-  editFilter() {
-    this.showFilterRowsOverlay = true;
-  }
-
   @HostListener('document:click', ['$event'])
   onClickOutside(event: Event) {
     if (
-      this.overlay &&
       this.showOverlay &&
+      this.overlay &&
       !this.overlay.nativeElement.contains(event.target)
     ) {
       this.showOverlay = false;
