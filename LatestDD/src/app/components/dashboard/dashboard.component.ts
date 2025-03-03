@@ -327,11 +327,11 @@ export class DashboardComponent implements OnInit {
       this.apiService.GetData(query.selectedTable).subscribe((res: any) => {
         query.allColumns = Object.keys(res[0]);
         query.tableData = res;
-        query.selectedColumns = query.selectedColumns.length
-          ? query.selectedColumns.filter((col) =>
-              query.allColumns.includes(col)
-            )
-          : [...query.allColumns];
+        // query.selectedColumns = query.selectedColumns.length
+        // ? query.selectedColumns.filter((col) =>
+        // query.allColumns.includes(col)
+        // )
+        // : [...query.allColumns];
       });
     }
   }
@@ -399,7 +399,7 @@ export class DashboardComponent implements OnInit {
         } else {
           query.allColumns = Object.keys(res[0]);
           query.tableData = res;
-          query.selectedColumns = [...query.allColumns];
+          // query.selectedColumns = [...query.allColumns];
         }
       });
     }

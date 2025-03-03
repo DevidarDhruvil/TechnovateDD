@@ -703,8 +703,8 @@ label {
 
 .execSql-buttons {
   position: absolute;
-  top: 75px;
-  right: 270px;
+  top: 14%;
+  right: 20%;
   display: flex;
   gap: 10px;
 }
