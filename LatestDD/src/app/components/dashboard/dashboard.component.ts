@@ -1,12 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  Component,
-  ElementRef,
-  HostListener,
-  OnInit,
-  ViewChild,
-  inject,
-} from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../Services/api.service';
 import { HeaderComponent } from '../header/header.component';
@@ -25,6 +18,7 @@ interface Query {
   selectedJoinType: string;
   selectedLeftColumn: string;
   selectedRightColumn: string;
+  filters: Filter[];
 }
 
 interface FilterColumn {
@@ -74,15 +68,7 @@ export class DashboardComponent implements OnInit {
 
   // Shared options
   joinTypes = ['inner', 'left', 'right', 'full'];
-  columnTypes = [
-    'String',
-    'Text',
-    'Integer',
-    'Decimal',
-    'Date',
-    'Time',
-    'Datetime',
-  ];
+  columnTypes = [ 'String', 'Text', 'Integer', 'Decimal', 'Date', 'Time', 'Datetime'];
   filterColumns: FilterColumn[] = [
     {
       name: 'Customer Name',
@@ -97,7 +83,7 @@ export class DashboardComponent implements OnInit {
     { name: 'Quantity', type: 'integer', values: [1, 2, 5, 10] },
     { name: 'Price', type: 'decimal', values: [10.99, 20.5, 100.75] },
   ];
-  operations: { [key: string]: string[] } = {
+  operations: Record<string, string[]> = {
     string: [
       'is',
       'is not',
@@ -116,7 +102,7 @@ export class DashboardComponent implements OnInit {
       'less than',
       'less than or equals',
       'between',
-      'within',
+      // 'within',
     ],
     integer: [
       'equals',
@@ -153,16 +139,7 @@ export class DashboardComponent implements OnInit {
   selectedTableToAppend = '';
   dropDuplicates = 'No';
   customExpression = '';
-  filters: Filter[] = [
-    {
-      column: '',
-      operation: '',
-      value: '',
-      availableOperations: [],
-      availableValues: [],
-      condition: 'AND',
-    },
-  ];
+  filters: Filter[] = [];
   groupings = [
     { groupByColumn: '', aggregateFunction: '', aggregateColumn: '' },
   ];
@@ -177,8 +154,6 @@ export class DashboardComponent implements OnInit {
   tabledata: any[] = [];
   columns: string[] = [];
   selectedColumns: string[] = [];
-
-  // Existing methods...
 
   sortTable(column: string) {
     if (this.sortColumn === column) {
@@ -272,6 +247,7 @@ export class DashboardComponent implements OnInit {
       selectedJoinType: '',
       selectedLeftColumn: '',
       selectedRightColumn: '',
+      filters: [],
     };
     this.queries.push(newQuery);
     this.openQuery(newQuery);
@@ -280,6 +256,7 @@ export class DashboardComponent implements OnInit {
   openQuery(query: Query) {
     this.selectedQuery = query;
     this.queryTitle = query.name;
+    this.filters = query.filters;
 
     if (query.selectedTable) {
       if (query.selectedJoinTable && query.tableData.length === 0) {
@@ -308,6 +285,7 @@ export class DashboardComponent implements OnInit {
     if (this.selectedQuery) {
       this.selectedQuery.selectedTable = table;
       this.fetchColumnNames(table);
+      this.fetchDataTypeData(table);
       this.fetchTableData();
     }
     this.closeTableOverlay();
@@ -319,6 +297,41 @@ export class DashboardComponent implements OnInit {
         this.selectedQuery.columnList = res;
       }
     });
+  }
+
+  dataType: Record<string, string> = {};
+
+  fetchDataTypeData(table:string){
+    this.apiService.GetDataTypeData(table).subscribe((res: any) => {
+      this.dataType = res;
+      console.log(this.dataType);
+    })
+  }
+
+  fetchDistinctColValues(index: number, columnName: string, tableName: string) {
+    this.apiService.GetDistinctColValues(tableName, columnName).subscribe((res: any)=> {
+      this.filters[index].availableValues = res || [];
+    })
+  }
+
+  fetchFilterData(filterDetails: any){
+    if (
+      this.selectedQuery &&
+      this.selectedQuery.selectedTable
+    ) {
+    const query = this.selectedQuery;
+    // filterDetails.forEach((filterBody: any) => {
+      this.apiService.GetFilterData(filterDetails).subscribe((res: any) => {
+        if (res.length === 0) {
+          query.tableData = [];
+        } else {
+          query.allColumns = Object.keys(res[0]);
+          query.tableData = res;
+          // query.selectedColumns = [...query.allColumns];
+        }
+        }
+      );
+  }
   }
 
   fetchTableData() {
@@ -446,31 +459,49 @@ export class DashboardComponent implements OnInit {
   }
 
   addFilter() {
-    this.filters.push({
-      column: '',
-      operation: '',
-      value: '',
-      availableOperations: [],
-      availableValues: [],
-      condition: 'AND',
-    });
+    debugger;
+    if(this.selectedQuery){
+      this.selectedQuery.filters = [
+        ...this.selectedQuery.filters,
+        {
+          column: '',
+          operation: '',
+          value: '',
+          availableOperations: [],
+          availableValues: [],
+          condition: 'AND',
+        },
+      ];
+  
+      // ✅ Ensure Angular detects the change
+      this.filters = [...this.selectedQuery.filters];
+    }
   }
 
   removeFilter(index: number) {
-    this.filters.splice(index, 1);
+    if(this.selectedQuery){
+      this.selectedQuery.filters.splice(index, 1);
+      // ✅ Ensure the UI updates
+      this.filters = [...this.selectedQuery.filters];
+    }
   }
 
   updateOperations(index: number) {
-    const selectedColumn = this.filterColumns.find(
-      (col) => col.name === this.filters[index].column
-    );
-    if (selectedColumn) {
-      this.filters[index].availableOperations =
-        this.operations[selectedColumn.type] || [];
+    const selectedColumn = this.filters[index].column;
+    const columnType = this.dataType[selectedColumn]; // Get data type from dataType object
+
+    if (columnType) {
+      this.filters[index].availableOperations = this.operations[columnType] || [];
       this.filters[index].operation = '';
-      this.filters[index].availableValues = selectedColumn.values;
+      this.filters[index].availableValues = []; // Reset values when column changes
+
+      // Fetch values for the selected column
+      if (this.selectedQuery?.selectedTable) {
+        this.fetchDistinctColValues(index, selectedColumn, this.selectedQuery.selectedTable);
+      }
     }
   }
+  
 
   updateValues(index: number) {
     const selectedColumn = this.filterColumns.find(
@@ -482,20 +513,44 @@ export class DashboardComponent implements OnInit {
   }
 
   clearFilters() {
-    this.filters = [
-      {
-        column: '',
-        operation: '',
-        value: '',
-        availableOperations: [],
-        availableValues: [],
-        condition: 'AND',
-      },
-    ];
+    if(this.selectedQuery){
+      this.selectedQuery.filters = [];
+      this.filters = [...this.selectedQuery.filters];
+      this.fetchTableData();
+    }
   }
 
   applyFilters() {
-    console.log('Filters:', this.filters);
+    if (!this.selectedQuery?.selectedTable) {
+      alert('Please select a table first.');
+      return;
+    }
+    
+    const filters = this.filters
+        .filter(filter => filter.column && filter.operation && filter.value !== '') // Ensure valid filters
+        .map((filter, index) => {
+            const filterObject: any = {
+                columnName: filter.column,
+                operator: filter.operation,
+                value: filter.value.toString(),
+            };
+
+            // Add logicalOperator only if there’s more than one filter
+            if (this.filters.length > 1 && index !== this.filters.length - 1) {
+                filterObject.logicalOperator = filter.condition; // AND/OR
+            }
+
+            return filterObject;
+        });
+
+        const requestBody = {
+          tableName: this.selectedQuery.selectedTable,
+          filters: filters,
+      };
+
+    console.log("filterConditions:" ,requestBody);
+
+    this.fetchFilterData(requestBody);
     this.closeFilterRowsOverlay();
   }
 
@@ -529,7 +584,7 @@ export class DashboardComponent implements OnInit {
   closeGroupSummarizeOverlay() {
     this.showGroupSummarizeOverlay = false;
   }
-
+  
   addCharts() {
     const chartsContainer = document.getElementById('chartsContainer');
     if (chartsContainer) {
@@ -560,6 +615,10 @@ export class DashboardComponent implements OnInit {
 
   editJoin() {
     this.showJoinTableOverlay = true;
+  }
+
+  editFilter(){
+    this.showFilterRowsOverlay = true;
   }
 
   toggleOverlay(event: Event) {

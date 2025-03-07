@@ -9,19 +9,17 @@ export class ApiService {
   http = inject(HttpClient);
  
   GetTableApi(payload: any) {
-    return this.http.post('http://192.168.1.76:5400/api/Database/tables', payload);
+    return this.http.post('http://192.168.1.30:5151/api/dashboard/tables', payload);
   }
   GetColumnApi(selectedTable: string){
-    debugger;
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const payload = {tableName:selectedTable}
-    debugger;
     return this.http.post("http://192.168.1.76:5400/api/Database/columns",payload,{headers});
   }
  
   GetData(selectedTable: string) {
     const payload = {tableName: selectedTable}
-    return this.http.post(`http://192.168.1.76:5400/api/Database/table-data`,payload);
+    return this.http.post(`http://192.168.1.30:5151/api/dashboard/dynamic-query`,payload);
   }
  
   GetJoinTableData(joinDetails: any){
@@ -31,5 +29,20 @@ export class ApiService {
                       rightColumnName: joinDetails.RightColumn,
                       joinType: joinDetails.JoinType}
     return this.http.post(`http://192.168.1.76:5300/api/JoinTables/join-tables`,payload);
+  }
+
+  GetDataTypeData(table: string){
+    const payload = {tableName: table}
+    return this.http.post("http://192.168.1.30:5151/api/dashboard/get-columns",payload);
+  }
+
+  GetDistinctColValues(table:string, col: string){
+    const payload = {tableName: table , columnName: col}
+    return this.http.post("http://192.168.1.76:5400/api/Database/distinct",payload)
+  }
+
+  GetFilterData(filterBody: any){
+    debugger;
+    return this.http.post("http://192.168.1.30:5151/api/dashboard/filter",filterBody)
   }
 }
