@@ -287,6 +287,14 @@ export class DashboardComponent implements OnInit {
       this.fetchColumnNames(table);
       this.fetchDataTypeData(table);
       this.fetchTableData();
+      this.selectedQuery.filters = [];
+      this.filters = [];
+      this.selectedQuery.rightColumns = [];
+      this.selectedQuery.rightTable = '';
+      this.selectedQuery.selectedJoinTable = '';
+      this.selectedQuery.selectedJoinType = '';
+      this.selectedQuery.selectedLeftColumn = '';
+      this.selectedQuery.selectedRightColumn = '';
     }
     this.closeTableOverlay();
   }
@@ -459,7 +467,6 @@ export class DashboardComponent implements OnInit {
   }
 
   addFilter() {
-    debugger;
     if(this.selectedQuery){
       this.selectedQuery.filters = [
         ...this.selectedQuery.filters,

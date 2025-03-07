@@ -9,7 +9,7 @@ export class ApiService {
   http = inject(HttpClient);
  
   GetTableApi(payload: any) {
-    return this.http.post('http://192.168.1.30:5151/api/dashboard/tables', payload);
+    return this.http.post('http://192.168.1.76:5400/api/Database/tables', payload);
   }
   GetColumnApi(selectedTable: string){
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
