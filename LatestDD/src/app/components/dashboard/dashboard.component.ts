@@ -156,73 +156,69 @@ export class DashboardComponent implements OnInit {
   selectedColumns: string[] = [];
 
   sortTable(column: string) {
+    // Toggle sort direction when clicking the same column, else set it to 'asc' for a new column.
     if (this.sortColumn === column) {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
       this.sortColumn = column;
-      this.sortDirection = 'asc';
+      this.sortDirection = 'asc';  // Default to ascending order when a new column is clicked.
     }
-
-    this.selectedQuery?.tableData.sort((a, b) => {
+ 
+    const tableData = this.selectedQuery?.tableData;
+    if (!tableData) return;
+ 
+    // Function to classify and extract text and numbers
+    const classifyValue = (value: string) => {
+      if (/^\d+$/.test(value)) {
+        return { type: 'number', value: parseInt(value, 10) };
+      } else if (/^[a-zA-Z_]+\d+$/.test(value)) {
+        const match = value.match(/([a-zA-Z_]+)(\d+)/);
+        return {
+          type: 'stringWithNumber',
+          text: match ? match[1] : value,
+          number: match && match[2] ? parseInt(match[2], 10) : 0,
+        };
+      }
+      return { type: 'string', value };
+    };
+ 
+    tableData.sort((a, b) => {
       const aValue = a[column];
       const bValue = b[column];
-
-      // Function to classify and extract text and numbers
-      const classifyValue = (value: string) => {
-        if (/^\d+$/.test(value)) {
-          return { type: 'number', value: parseInt(value, 10) };
-        } else if (/[a-zA-Z]+_\d+/.test(value)) {
-          // Matches Name_4, Name_10, etc.
-          const match = value.match(/([a-zA-Z_]+)(\d+)/);
-          return {
-            type: 'stringWithNumber',
-            text: match ? match[1] : value,
-            number: match && match[2] ? parseInt(match[2], 10) : 0,
-          };
-        }
-        return { type: 'string', value: value };
-      };
-
+ 
       const aParts = classifyValue(aValue);
       const bParts = classifyValue(bValue);
-
-      // Numbers come first
+ 
+      const direction = this.sortDirection === 'asc' ? 1 : -1;
+ 
+      // If both are numbers, compare them numerically
       if (aParts.type === 'number' && bParts.type === 'number') {
-        return this.sortDirection === 'asc'
-          ? (aParts.value as number) - (bParts.value as number)
-          : (bParts.value as number) - (aParts.value as number);
+        return direction * (aParts.value as number) -( bParts.value as number);
       }
+ 
+      // If one is a number and the other is not, numbers should come first
       if (aParts.type === 'number' && bParts.type !== 'number') {
-        return this.sortDirection === 'asc' ? -1 : 1;
+        return direction * -1;  // Numbers come before strings
       }
       if (aParts.type !== 'number' && bParts.type === 'number') {
-        return this.sortDirection === 'asc' ? 1 : -1;
+        return direction * 1;   // Strings come after numbers
       }
-
-      // Sorting logic for strings with numbers
-      if (
-        aParts.type === 'stringWithNumber' &&
-        bParts.type === 'stringWithNumber'
-      ) {
-        if (
-          aParts.text !== undefined &&
-          bParts.text !== undefined &&
-          aParts.text !== bParts.text
-        ) {
-          return this.sortDirection === 'asc'
-            ? aParts.text.localeCompare(bParts.text)
-            : bParts.text.localeCompare(aParts.text);
+ 
+      // Sorting logic for strings with numbers (e.g., Name_12, Name_11)
+      if (aParts.type === 'stringWithNumber' && bParts.type === 'stringWithNumber') {
+        if (aParts.text && bParts.text && aParts.text !== bParts.text) {
+          return direction * aParts.text.localeCompare(bParts.text); // Compare the text part
         }
-        return this.sortDirection === 'asc'
-          ? (aParts.number ?? 0) - (bParts.number ?? 0)
-          : (bParts.number ?? 0) - (aParts.number ?? 0);
+        return direction * (aParts.number ?? 0 - (bParts.number ?? 0)); // If text is the same, compare the numeric part
       }
-
+ 
+ 
       // Pure strings should be sorted alphabetically
-      return this.sortDirection === 'asc'
-        ? (aParts.value as string).localeCompare(bParts.value as string)
-        : (bParts.value as string).localeCompare(aParts.value as string);
+    return direction * String(aParts.value).localeCompare(String(bParts.value));
     });
+ 
+    // After sorting, update the table data
+    this.selectedQuery!.tableData = tableData;
   }
 
   getTableNames() {

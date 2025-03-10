@@ -1,3 +1,4 @@
+/* Import Roboto font for a clean, modern look */
 @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
 
 * {
@@ -12,39 +13,50 @@ body {
   height: 100%;
 }
 
-/* Container fills the viewport with a dark gradient */
+/* Full-page container with light grey background */
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: linear-gradient(135deg, #1f1c2c, #928dab);
+  background: #f5f3f5; /* Light grey background */
 }
 
-/* The card that holds the login form */
+/* Login card with light grey background and subtle blue border */
 .login-card {
-  background: rgba(0, 0, 0, 0.85);
+  background: #f5f3f5; /* Light grey card background */
   padding: 2.5rem;
   border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
   width: 350px;
   text-align: center;
-  color: #fff;
+  color: #333; /* Dark grey text */
+  border: 2px solid #061826; /* Soft blue border */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Hover effect for interactivity */
+/* .login-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+} */
+
+/* Heading and description */
 .login-card h1 {
   margin-bottom: 0.5rem;
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: #333;
+  text-transform: uppercase;
 }
 
 .login-card p {
   margin-bottom: 1.5rem;
-  color: #ccc;
+  color: #666; /* Medium grey for description */
   font-size: 0.95rem;
 }
 
-/* Styling for each input field */
+/* Input group styling */
 .input-group {
   text-align: left;
   margin-bottom: 1.2rem;
@@ -54,25 +66,27 @@ body {
   display: block;
   margin-bottom: 0.3rem;
   font-size: 0.9rem;
-  color: #bbb;
+  color: #1b264f; /* Soft blue for labels */
 }
 
 .input-group input {
   width: 100%;
   padding: 0.8rem;
-  border: none;
+  border: 1px solid #061826; /* Soft blue border */
   border-radius: 8px;
-  background: #333;
-  color: #fff;
+  background: #ffffff; /* White input background */
+  color: #333;
   font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input-group input:focus {
   outline: none;
-  background: #444;
+  border-color: #84acce; /* Blue highlight on focus */
+  box-shadow: 0 0 5px rgba(132, 172, 206, 0.5); /* Subtle blue shadow */
 }
 
-/* Button styles */
+/* Button styling */
 .btn {
   width: 100%;
   padding: 0.8rem;
@@ -81,23 +95,25 @@ body {
   font-size: 1rem;
   cursor: pointer;
   margin-top: 0.5rem;
-  transition: background 0.3s;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
 .login-btn {
-  background: #6200ea;
-  color: #fff;
+  background: #103900; /* Green for login button */
+  color: #ffffff;
 }
 
 .login-btn:hover {
-  background: #7e3ff2;
+  background: #103900; /* Lighter green on hover */
+  transform: translateY(-2px);
 }
 
 .cancel-btn {
-  background: #b00020;
-  color: #fff;
+  background: #b00020; /* Red for cancel button */
+  color: #ffffff;
 }
 
 .cancel-btn:hover {
-  background: #d32f2f;
+  background: #d32f2f; /* Lighter red on hover */
+  transform: translateY(-2px);
 }

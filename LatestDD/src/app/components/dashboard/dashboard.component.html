@@ -270,7 +270,7 @@
               [(ngModel)]="selectedQuery!.selectedJoinTable"
               (ngModelChange)="RightTable($event)"
             >
-              <option *ngFor="let table of tables" [value]="table">
+              <option *ngFor="let table of tables" [value]="table" [disabled]="table === selectedQuery?.selectedTable">
                 {{ table }}
               </option>
             </select>
