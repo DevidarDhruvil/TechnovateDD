@@ -375,11 +375,35 @@
                 </select>
 
                 <!-- Value Selection (Only Show If Column & Operation Selected) -->
-                <select [(ngModel)]="filter.value">
+                <!-- <select [(ngModel)]="filter.value">
                   <option *ngFor="let val of filter.availableValues" [value]="val" >
                     {{ val }}
                   </option>
+                </select> -->
+
+
+                <!-- Single Value Selection -->
+                <select [(ngModel)]="filter.value" *ngIf="filter.operation !== 'between'">
+                  <option *ngFor="let val of filter.availableValues" [value]="val">
+                      {{ val }}
+                  </option>
                 </select>
+
+                <!-- "Between" Operation with Two Separate Selects -->
+     
+                <select [(ngModel)]="filter.valueStart"  *ngIf="filter.operation === 'between'">
+                  <option *ngFor="let val of filter.availableValues" [value]="val">
+                    {{ val }}
+                  </option>
+                </select>
+
+                <select [(ngModel)]="filter.valueEnd"  *ngIf="filter.operation === 'between'">
+                  <option *ngFor="let val of filter.availableValues" [value]="val">
+                    {{ val }}
+                  </option>
+                </select>
+
+
 
                 <!-- Condition (AND/OR) -->
                 <select [(ngModel)]="filter.condition" *ngIf="i !== filters.length - 1" >

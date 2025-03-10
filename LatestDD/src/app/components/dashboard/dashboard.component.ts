@@ -31,6 +31,8 @@ interface Filter {
   column: string;
   operation: string;
   value: string | number;
+  valueStart: string;
+  valueEnd: string;
   availableOperations: string[];
   availableValues: (string | number)[];
   condition: 'AND' | 'OR';
@@ -470,6 +472,8 @@ export class DashboardComponent implements OnInit {
           column: '',
           operation: '',
           value: '',
+          valueStart: '',
+          valueEnd: '',
           availableOperations: [],
           availableValues: [],
           condition: 'AND',
@@ -530,12 +534,14 @@ export class DashboardComponent implements OnInit {
     }
     
     const filters = this.filters
-        .filter(filter => filter.column && filter.operation && filter.value !== '') // Ensure valid filters
+    .filter(filter => filter.column && filter.operation && (filter.operation !== 'between' || (filter.valueStart && filter.valueEnd))) // Ensure valid filters
         .map((filter, index) => {
             const filterObject: any = {
                 columnName: filter.column,
                 operator: filter.operation,
-                value: filter.value.toString(),
+                value: filter.operation === 'between'
+                  ? [filter.valueStart, filter.valueEnd]  // For 'between' operation, use a range
+                  : filter.value.toString(), // Convert value to string for consistency
             };
 
             // Add logicalOperator only if there’s more than one filter
