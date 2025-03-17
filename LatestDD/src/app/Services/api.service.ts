@@ -9,40 +9,44 @@ export class ApiService {
   http = inject(HttpClient);
  
   GetTableApi(payload: any) {
-    return this.http.post('http://192.168.1.76:5400/api/Database/tables', payload);
+    return this.http.post('http://192.168.1.30:5151/api/dashboard/tables', payload);
   }
   GetColumnApi(selectedTable: string){
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    // console.log(selectedTable.toString());
+    // const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const payload = {tableName:selectedTable}
-    return this.http.post("http://192.168.1.76:5400/api/Database/columns",payload,{headers});
+    return this.http.post("http://192.168.1.76:5400/api/Database/columns",payload);
+    //http://192.168.1.30:5151/api/dashboard/fields
+    //http://192.168.1.76:5400/api/Database/columns
   }
  
   GetData(selectedTable: string) {
     const payload = {tableName: selectedTable}
     return this.http.post(`http://192.168.1.30:5151/api/dashboard/dynamic-query`,payload);
+    // http://192.168.1.30:5151/api/dashboard/dynamic-query
+    //http://192.168.1.76:5400/api/Database/table-data
   }
  
   GetJoinTableData(joinDetails: any){
-    const payload = { leftTableName: joinDetails.LeftTable,
-                      rightTableName: joinDetails.JoinTable,
-                      leftColumnName: joinDetails.LeftColumn,
-                      rightColumnName: joinDetails.RightColumn,
-                      joinType: joinDetails.JoinType}
-    return this.http.post(`http://192.168.1.76:5300/api/JoinTables/join-tables`,payload);
+    return this.http.post(`http://192.168.1.30:5151/api/dashboard/execute`,joinDetails);
   }
 
   GetDataTypeData(table: string){
     const payload = {tableName: table}
     return this.http.post("http://192.168.1.30:5151/api/dashboard/get-columns",payload);
+    //http://192.168.1.30:5151/api/dashboard/get-columns
+    //http://192.168.1.76:5100/api/Database/get-columns
   }
 
   GetDistinctColValues(table:string, col: string){
-    const payload = {tableName: table , columnName: col}
-    return this.http.post("http://192.168.1.76:5400/api/Database/distinct",payload)
+    const payload = {tableName: table , columns: [col]}
+    return this.http.post("http://192.168.1.30:5151/api/dashboard/distinct-values",payload)
+    //http://192.168.1.30:5151/api/dashboard/distinct-values
+    //http://192.168.1.76:5400/api/Database/distinct
   }
 
   GetFilterData(filterBody: any){
-    debugger;
-    return this.http.post("http://192.168.1.30:5151/api/dashboard/filter",filterBody)
+    console.log("filter data pass:",filterBody);
+    return this.http.post("http://192.168.1.30:5151/api/dashboard/execute",filterBody)
   }
 }

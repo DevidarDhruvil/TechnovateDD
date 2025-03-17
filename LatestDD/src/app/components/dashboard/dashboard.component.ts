@@ -19,6 +19,15 @@ interface Query {
   selectedLeftColumn: string;
   selectedRightColumn: string;
   filters: Filter[];
+  joins: Join[]
+}
+
+interface Join {
+  // leftTable: string;
+  sourceColumn: string;
+  joinTable: string;
+  targetColumn: string;
+  joinType: string;
 }
 
 interface FilterColumn {
@@ -245,6 +254,7 @@ export class DashboardComponent implements OnInit {
       selectedJoinType: '',
       selectedLeftColumn: '',
       selectedRightColumn: '',
+      joins: [],
       filters: [],
     };
     this.queries.push(newQuery);
@@ -326,7 +336,6 @@ export class DashboardComponent implements OnInit {
       this.selectedQuery.selectedTable
     ) {
     const query = this.selectedQuery;
-    // filterDetails.forEach((filterBody: any) => {
       this.apiService.GetFilterData(filterDetails).subscribe((res: any) => {
         if (res.length === 0) {
           query.tableData = [];
@@ -346,11 +355,6 @@ export class DashboardComponent implements OnInit {
       this.apiService.GetData(query.selectedTable).subscribe((res: any) => {
         query.allColumns = Object.keys(res[0]);
         query.tableData = res;
-        // query.selectedColumns = query.selectedColumns.length
-        //   ? query.selectedColumns.filter((col) =>
-        //       query.allColumns.includes(col)
-        //     )
-        //   : [...query.allColumns];
       });
     }
   }
@@ -393,6 +397,8 @@ export class DashboardComponent implements OnInit {
   confirmJoinTable() {
     if (this.selectedQuery) {
       this.fetchJoinData();
+      this.selectedQuery.filters = [];
+      this.filters = [...this.selectedQuery.filters];
     }
     this.showJoinTableOverlay = false;
   }
@@ -401,24 +407,36 @@ export class DashboardComponent implements OnInit {
     if (
       this.selectedQuery &&
       this.selectedQuery.selectedTable &&
-      this.selectedQuery.selectedJoinTable
+      this.selectedQuery.joins
     ) {
       const query = this.selectedQuery;
-      const joinDetails = {
-        JoinTable: query.selectedJoinTable,
-        LeftColumn: query.selectedLeftColumn,
-        RightColumn: query.selectedRightColumn,
-        JoinType: query.selectedJoinType,
-        LeftTable: query.selectedTable,
-      };
-      this.apiService.GetJoinTableData(joinDetails).subscribe((res: any) => {
+      // const joinDetails = {
+      //   JoinTable: query.selectedJoinTable,
+      //   LeftColumn: query.selectedLeftColumn,
+      //   RightColumn: query.selectedRightColumn,
+      //   JoinType: query.selectedJoinType,
+      //   LeftTable: query.selectedTable,
+      // };
+      this.selectedQuery.joins.push({
+        // leftTable: this.selectedQuery.selectedTable,
+        joinTable: query.selectedJoinTable,
+        sourceColumn: query.selectedLeftColumn,
+        targetColumn: query.selectedRightColumn,
+        joinType: query.selectedJoinType,
+      });
+
+      const requestBody = {
+        tableName: this.selectedQuery.selectedTable,
+        joins: this.selectedQuery.joins
+      }
+
+      this.apiService.GetJoinTableData(requestBody).subscribe((res: any) => {
         if (res.length === 0) {
           query.tableData = [];
           query.selectedColumns = [];
         } else {
           query.allColumns = Object.keys(res[0]);
           query.tableData = res;
-          // query.selectedColumns = [...query.allColumns];
         }
       });
     }
@@ -538,7 +556,7 @@ export class DashboardComponent implements OnInit {
         .map((filter, index) => {
             const filterObject: any = {
                 columnName: filter.column,
-                operator: filter.operation,
+                condition: filter.operation,
                 value: filter.operation === 'between'
                   ? [filter.valueStart, filter.valueEnd]  // For 'between' operation, use a range
                   : filter.value.toString(), // Convert value to string for consistency
@@ -554,6 +572,7 @@ export class DashboardComponent implements OnInit {
 
         const requestBody = {
           tableName: this.selectedQuery.selectedTable,
+          joins: this.selectedQuery.joins,
           filters: filters,
       };
 
