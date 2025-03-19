@@ -19,19 +19,19 @@ body {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: #f5f3f5; /* Light grey background */
+  background: white; /* Light grey background */
 }
 
 /* Login card with light grey background and subtle blue border */
 .login-card {
-  background: #f5f3f5; /* Light grey card background */
+  background: whitesmoke; /* Light grey card background */
   padding: 2.5rem;
   border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
   width: 350px;
   text-align: center;
   color: #333; /* Dark grey text */
-  border: 2px solid #061826; /* Soft blue border */
+  border: 2px solid #ccc; /* Soft blue border */
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -72,7 +72,7 @@ body {
 .input-group input {
   width: 100%;
   padding: 0.8rem;
-  border: 1px solid #061826; /* Soft blue border */
+  border: 1px solid #ccc; /* Soft blue border */
   border-radius: 8px;
   background: #ffffff; /* White input background */
   color: #333;

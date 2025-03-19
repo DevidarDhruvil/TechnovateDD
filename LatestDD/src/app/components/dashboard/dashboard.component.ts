@@ -12,17 +12,17 @@ interface Query {
   allColumns: string[];
   columnList: string[];
   tableData: any[];
+  filters: Filter[];
+  joins: Join[]
+}
+
+interface Join {
   rightTable: string;
   rightColumns: string[];
   selectedJoinTable: string;
   selectedJoinType: string;
   selectedLeftColumn: string;
   selectedRightColumn: string;
-  filters: Filter[];
-  joins: Join[]
-}
-
-interface Join {
   // leftTable: string;
   sourceColumn: string;
   joinTable: string;
@@ -151,6 +151,11 @@ export class DashboardComponent implements OnInit {
   dropDuplicates = 'No';
   customExpression = '';
   filters: Filter[] = [];
+  joins: Join[] = [];
+
+  selectedJoin: Join | null = null;
+  joinIndex: number = 0;
+
   groupings = [
     { groupByColumn: '', aggregateFunction: '', aggregateColumn: '' },
   ];
@@ -248,12 +253,6 @@ export class DashboardComponent implements OnInit {
       allColumns: [],
       columnList: [],
       tableData: [],
-      rightTable: '',
-      rightColumns: [],
-      selectedJoinTable: '',
-      selectedJoinType: '',
-      selectedLeftColumn: '',
-      selectedRightColumn: '',
       joins: [],
       filters: [],
     };
@@ -265,9 +264,10 @@ export class DashboardComponent implements OnInit {
     this.selectedQuery = query;
     this.queryTitle = query.name;
     this.filters = query.filters;
+    this.joins = query.joins ?? [];
 
     if (query.selectedTable) {
-      if (query.selectedJoinTable && query.tableData.length === 0) {
+      if (query.joins && query.tableData.length === 0) {
         this.fetchJoinData();
       } else if (query.tableData.length === 0) {
         this.fetchTableData();
@@ -295,14 +295,10 @@ export class DashboardComponent implements OnInit {
       this.fetchColumnNames(table);
       this.fetchDataTypeData(table);
       this.fetchTableData();
+      this.selectedQuery.selectedColumns = [];
       this.selectedQuery.filters = [];
       this.filters = [];
-      this.selectedQuery.rightColumns = [];
-      this.selectedQuery.rightTable = '';
-      this.selectedQuery.selectedJoinTable = '';
-      this.selectedQuery.selectedJoinType = '';
-      this.selectedQuery.selectedLeftColumn = '';
-      this.selectedQuery.selectedRightColumn = '';
+      this.selectedQuery.joins = [];
     }
     this.closeTableOverlay();
   }
@@ -379,26 +375,85 @@ export class DashboardComponent implements OnInit {
     this.showColumnOverlay = false;
   }
 
-  RightTable(table: string) {
-    if (this.selectedQuery) {
-      this.selectedQuery.rightTable = table;
-      this.fetchRightColumnNames(table);
-    }
-  }
+  // RightTable(table: string) {
+  //   if (this.selectedQuery && this.selectedQuery.joins[joinIndex]) {
+  //     this.selectedQuery.joins[joinIndex].rightTable = table;
+  //     this.fetchRightColumnNames(table);
+  //   }
+  // }
 
-  fetchRightColumnNames(table: string) {
+  RightTable(table: string, joinIndex: number) {
+    console.log("Current joins array:", this.selectedQuery?.joins);
+    console.log("Trying to access index:", joinIndex);
+ 
+    // Check if selectedQuery exists
+    if (!this.selectedQuery) {
+        console.error("Error: selectedQuery is null or undefined!");
+        return;
+    }
+ 
+    // Initialize joins array if it doesn't exist
+    if (!this.selectedQuery.joins) {
+        console.log("Initializing joins array...");
+        this.selectedQuery.joins = [];
+    }
+ 
+    // Validate joinIndex
+    if (joinIndex < 0) {
+        console.error("Error: joinIndex cannot be negative:", joinIndex);
+        return;
+    }
+ 
+    // Ensure enough join objects exist
+    while (this.selectedQuery.joins.length <= joinIndex) {
+        console.log(`Adding empty join object at index ${this.selectedQuery.joins.length}`);
+        this.selectedQuery.joins.push({
+            joinTable: "",
+            sourceColumn: "",
+            targetColumn: "",
+            joinType: "",
+            rightColumns: [],
+            rightTable: '',
+            selectedJoinTable: '',
+            selectedJoinType: '',
+            selectedLeftColumn: '',
+            selectedRightColumn: ''
+        });
+    }
+ 
+    console.log("After modification, joins array length:", this.selectedQuery.joins.length);
+    console.log("Target index:", joinIndex);
+    console.log("Full joins array:", this.selectedQuery.joins);
+ 
+    // Verify the join object exists before modifying it
+    if (this.selectedQuery.joins[joinIndex] === undefined) {
+        console.error(`Error: Join object at index ${joinIndex} is undefined!`);
+        return;
+    }
+    
+    console.log(`Set joinTable to ${table} at index ${joinIndex}`);
+    this.selectedJoin = this.selectedQuery.joins[joinIndex];
+    this.selectedJoin.joinTable = table;
+    this.fetchRightColumnNames(table, joinIndex);
+} 
+
+  fetchRightColumnNames(table: string, joinIndex: number) {
+    debugger;
     this.apiService.GetColumnApi(table).subscribe((res: any) => {
-      if (this.selectedQuery) {
-        this.selectedQuery.rightColumns = res;
+      if (this.selectedQuery ) {
+        debugger;
+        this.selectedQuery.joins[joinIndex].rightColumns = res;
+        debugger;
       }
     });
   }
 
   confirmJoinTable() {
-    if (this.selectedQuery) {
+    if (this.selectedQuery && this.selectedJoin !== null && this.joinIndex !== -1 ) {
       this.fetchJoinData();
       this.selectedQuery.filters = [];
       this.filters = [...this.selectedQuery.filters];
+      this.selectedQuery.joins[this.joinIndex] = { ...this.selectedJoin };
     }
     this.showJoinTableOverlay = false;
   }
@@ -406,24 +461,8 @@ export class DashboardComponent implements OnInit {
   fetchJoinData() {
     if (
       this.selectedQuery &&
-      this.selectedQuery.selectedTable &&
-      this.selectedQuery.joins
+      this.selectedQuery.selectedTable
     ) {
-      const query = this.selectedQuery;
-      // const joinDetails = {
-      //   JoinTable: query.selectedJoinTable,
-      //   LeftColumn: query.selectedLeftColumn,
-      //   RightColumn: query.selectedRightColumn,
-      //   JoinType: query.selectedJoinType,
-      //   LeftTable: query.selectedTable,
-      // };
-      this.selectedQuery.joins.push({
-        // leftTable: this.selectedQuery.selectedTable,
-        joinTable: query.selectedJoinTable,
-        sourceColumn: query.selectedLeftColumn,
-        targetColumn: query.selectedRightColumn,
-        joinType: query.selectedJoinType,
-      });
 
       const requestBody = {
         tableName: this.selectedQuery.selectedTable,
@@ -432,11 +471,15 @@ export class DashboardComponent implements OnInit {
 
       this.apiService.GetJoinTableData(requestBody).subscribe((res: any) => {
         if (res.length === 0) {
-          query.tableData = [];
-          query.selectedColumns = [];
+          // query.tableData = [];
+          // query.selectedColumns = [];
+          this.selectedQuery!.tableData = [];
+          this.selectedQuery!.selectedColumns = [];
         } else {
-          query.allColumns = Object.keys(res[0]);
-          query.tableData = res;
+          // query.allColumns = Object.keys(res[0]);
+          // query.tableData = res;
+          this.selectedQuery!.allColumns = Object.keys(res[0]);
+          this.selectedQuery!.tableData = res;
         }
       });
     }
@@ -641,7 +684,8 @@ export class DashboardComponent implements OnInit {
     this.showColumnOverlay = true;
   }
 
-  editJoin() {
+  editJoin(joinIndex: number) {
+    this.selectedJoin = this.selectedQuery?.joins[joinIndex] || null;
     this.showJoinTableOverlay = true;
   }
 
@@ -669,9 +713,15 @@ export class DashboardComponent implements OnInit {
     this.showOverlay = false;
   }
 
-  openJoinTableOverlay() {
-    this.showJoinTableOverlay = true;
-    this.showOverlay = false;
+  openJoinTableOverlay(index: number) {
+    if (this.selectedQuery) {
+      this.joinIndex = index;
+      this.selectedJoin = { ...this.selectedQuery.joins[index] };
+      this.showJoinTableOverlay = true;
+      this.showOverlay = false;
+    }
+    // this.showJoinTableOverlay = true;
+    // this.showOverlay = false;
   }
 
   openAppendTableOverlay() {
@@ -737,13 +787,13 @@ export class DashboardComponent implements OnInit {
 
     // Add JOIN if present
     if (
-      this.selectedQuery?.selectedJoinTable &&
-      this.selectedQuery?.selectedLeftColumn &&
-      this.selectedQuery?.selectedRightColumn &&
-      this.selectedQuery?.selectedJoinType
+      this.selectedJoin?.selectedJoinTable &&
+      this.selectedJoin?.selectedLeftColumn &&
+      this.selectedJoin?.selectedRightColumn &&
+      this.selectedJoin?.selectedJoinType
     ) {
-      const joinType = this.selectedQuery?.selectedJoinType.toUpperCase();
-      sql += `${joinType} ${this.selectedQuery?.selectedJoinTable} ON ${this.selectedQuery?.selectedTable}.${this.selectedQuery?.selectedLeftColumn} = ${this.selectedQuery?.selectedJoinTable}.${this.selectedQuery?.selectedRightColumn}\n`;
+      const joinType = this.selectedJoin?.selectedJoinType.toUpperCase();
+      sql += `${joinType} ${this.selectedJoin?.selectedJoinTable} ON ${this.selectedQuery?.selectedTable}.${this.selectedJoin?.selectedLeftColumn} = ${this.selectedJoin?.selectedJoinTable}.${this.selectedJoin?.selectedRightColumn}\n`;
     }
 
     // Add WHERE clause for filters
