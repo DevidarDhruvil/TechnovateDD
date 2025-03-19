@@ -3,49 +3,9 @@ import { Component, ElementRef, HostListener, OnInit, ViewChild, inject } from '
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../Services/api.service';
 import { HeaderComponent } from '../header/header.component';
-
-interface Query {
-  id: number;
-  name: string;
-  selectedTable: string;
-  selectedColumns: string[];
-  allColumns: string[];
-  columnList: string[];
-  tableData: any[];
-  filters: Filter[];
-  joins: Join[]
-}
-
-interface Join {
-  rightTable: string;
-  rightColumns: string[];
-  selectedJoinTable: string;
-  selectedJoinType: string;
-  selectedLeftColumn: string;
-  selectedRightColumn: string;
-  // leftTable: string;
-  sourceColumn: string;
-  joinTable: string;
-  targetColumn: string;
-  joinType: string;
-}
-
-interface FilterColumn {
-  name: string;
-  type: 'string' | 'DateTime' | 'integer' | 'decimal';
-  values: string[] | number[];
-}
-
-interface Filter {
-  column: string;
-  operation: string;
-  value: string | number;
-  valueStart: string;
-  valueEnd: string;
-  availableOperations: string[];
-  availableValues: (string | number)[];
-  condition: 'AND' | 'OR';
-}
+import { Query } from '../../Shared/Interface/Query';
+import { Join } from '../../Shared/Interface/Join';
+import { Filter, FilterColumn } from '../../Shared/Interface/Filter';
 
 @Component({
   selector: 'app-root',
