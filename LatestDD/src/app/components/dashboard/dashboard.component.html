@@ -271,7 +271,7 @@
               [(ngModel)]="selectedJoin!.joinTable"
               (ngModelChange)="RightTable($event, joinIndex)"
             >
-              <option value="" disabled selected>Select Right Table</option>
+              <option value="" hidden>Select Right Table</option>
               <option
                 *ngFor="let table of tables"
                 [value]="table"

@@ -215,6 +215,7 @@ export class DashboardComponent implements OnInit {
       tableData: [],
       joins: [],
       filters: [],
+      
     };
     this.queries.push(newQuery);
     this.openQuery(newQuery);
@@ -264,10 +265,28 @@ export class DashboardComponent implements OnInit {
   }
 
   fetchColumnNames(table: string) {
+    debugger;
     this.apiService.GetColumnApi(table).subscribe((res: any) => {
       if (this.selectedQuery) {
         this.selectedQuery.columnList = res;
+       
       }
+      if (!this.selectedJoin) {
+        this.selectedJoin = {
+          sourceColumns: [],
+          targetColumns: [],
+          sourceColumn: '',
+          targetColumn: '',
+          joinTable: '',
+          joinType: '',
+          rightColumns: [],
+          re:[]
+        };
+      }
+      const columnList:any = [...res]; // Define columnList as a separate variable
+      this.selectedJoin.sourceColumns = [columnList]; 
+      console.log( this.selectedJoin.sourceColumns)
+      
     });
   }
 
@@ -327,6 +346,7 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+
   closeTableOverlay() {
     this.showTableOverlay = false;
   }
@@ -368,16 +388,14 @@ export class DashboardComponent implements OnInit {
     while (this.selectedQuery.joins.length <= joinIndex) {
         console.log(`Adding empty join object at index ${this.selectedQuery.joins.length}`);
         this.selectedQuery.joins.push({
-            joinTable: "",
-            sourceColumn: "",
-            targetColumn: "",
-            joinType: "",
-            rightColumns: [],
-            rightTable: '',
-            selectedJoinTable: '',
-            selectedJoinType: '',
-            selectedLeftColumn: '',
-            selectedRightColumn: ''
+          joinTable: "",
+          sourceColumn: "",
+          targetColumn: "",
+          joinType: "",
+          rightColumns: [],
+          sourceColumns: [],    // Added missing property
+          targetColumns: [] ,    // Added missing property
+          re:[]
         });
     }
  
@@ -403,8 +421,11 @@ export class DashboardComponent implements OnInit {
       if (this.selectedQuery ) {
         debugger;
         this.selectedQuery.joins[joinIndex].rightColumns = res;
-        debugger;
+        this.selectedQuery.joins[joinIndex].re = res;
+        console.log("Right column data ",this.selectedJoin?.re)
       }
+     
+      
     });
   }
 
@@ -733,27 +754,42 @@ export class DashboardComponent implements OnInit {
     debugger;
     let sql = '';
 
-    // Begin with SELECT statement
     if (this.selectedQuery) {
+      // Check if columns are selected
       if (this.selectedQuery.selectedColumns.length > 0) {
-        sql += `SELECT ${this.selectedQuery.selectedColumns.join(', ')}\n`;
-      } else {
-        sql += 'SELECT *\n';
+        sql += `SELECT ${this.selectedQuery.selectedColumns
+          .map(col => {
+            // If column belongs to the main table and joins exist, prefix with table name
+            if (this.selectedQuery?.columnList?.includes(col) && this.selectedQuery.joins.length > 0) {
+              return `${this.selectedQuery?.selectedTable}.${col}`;
+            } 
+            // If column belongs to the main table and no joins exist, return column without prefix
+            else if (this.selectedQuery?.columnList?.includes(col)) {
+              return `${col}`;
+            } 
+            // If the column belongs to a joined table, prefix it with the join table name
+            else if (this.selectedQuery?.joins.some(j => j.re.includes(col))) {
+              const matchingJoin = this.selectedQuery.joins.find(j => j.re.includes(col));
+              return `${matchingJoin?.joinTable}.${col}`;
+            }
+            return col; // Default return (shouldn't happen often)
+          })
+          .join(', ')} FROM ${this.selectedQuery.selectedTable}\n`;
+      } 
+      else {
+        // No columns selected, select all
+        sql += `SELECT * FROM ${this.selectedQuery.selectedTable};\n`;
       }
-    }
 
-    // Add FROM clause
-    sql += `FROM ${this.selectedQuery?.selectedTable}\n`;
-
-    // Add JOIN if present
-    if (
-      this.selectedJoin?.selectedJoinTable &&
-      this.selectedJoin?.selectedLeftColumn &&
-      this.selectedJoin?.selectedRightColumn &&
-      this.selectedJoin?.selectedJoinType
-    ) {
-      const joinType = this.selectedJoin?.selectedJoinType.toUpperCase();
-      sql += `${joinType} ${this.selectedJoin?.selectedJoinTable} ON ${this.selectedQuery?.selectedTable}.${this.selectedJoin?.selectedLeftColumn} = ${this.selectedJoin?.selectedJoinTable}.${this.selectedJoin?.selectedRightColumn}\n`;
+      // Add JOIN if present
+      if (this.selectedQuery.joins.length > 0) {
+        this.selectedQuery.joins.forEach(join => {
+          if (join.joinTable && join.sourceColumn && join.targetColumn && join.joinType.length >= 1) {
+            const joinType = join.joinType.toUpperCase();
+            sql += `${joinType} JOIN ${join.joinTable} ON ${this.selectedQuery?.selectedTable}.${join.sourceColumn} = ${join.joinTable}.${join.targetColumn}\n`;
+          }
+        });
+      }
     }
 
     // Add WHERE clause for filters
@@ -774,6 +810,7 @@ export class DashboardComponent implements OnInit {
           // Format the condition based on operation type
           switch (filter.operation) {
             case 'contains':
+              
               clause = `${filter.column} LIKE '%${filter.value}%'`;
               break;
             case 'does not contain':
@@ -787,22 +824,43 @@ export class DashboardComponent implements OnInit {
               break;
             case 'is':
             case 'equals':
-              clause = `${filter.column} = '${filter.value}'`;
+              debugger;
+              if(this.selectedQuery && this.selectedQuery.joins.length > 0){
+                clause = `${this.selectedQuery?.selectedTable}||${this.selectedJoin?.joinTable}.${filter.column} = '${filter.value}'`;
+              }else{
+                clause = `${filter.column} = '${filter.value}'`;
+              }
+              
               break;
             case 'is not':
             case 'not equals':
+              if(this.selectedQuery && this.selectedQuery.joins.length > 0){
+                clause = `${this.selectedQuery?.selectedTable}.${filter.column} != '${filter.value}'`;
+              }
               clause = `${filter.column} != '${filter.value}'`;
               break;
             case 'greater than':
+              if(this.selectedQuery && this.selectedQuery.joins.length > 0){
+                clause = `${this.selectedQuery?.selectedTable}.${filter.column} > ${filter.value}`;
+              }
               clause = `${filter.column} > ${filter.value}`;
               break;
             case 'greater than or equals':
+              if(this.selectedQuery && this.selectedQuery.joins.length > 0){
+                clause = `${this.selectedQuery?.selectedTable}.${filter.column} >= ${filter.value}`;
+              }
               clause = `${filter.column} >= ${filter.value}`;
               break;
             case 'less than':
+              if(this.selectedQuery && this.selectedQuery.joins.length > 0){
+                clause = `${this.selectedQuery?.selectedTable}.${filter.column} < ${filter.value}`; 
+              }
               clause = `${filter.column} < ${filter.value}`;
               break;
             case 'less than or equals':
+              if(this.selectedQuery && this.selectedQuery.joins.length > 0){
+                clause = `${this.selectedQuery?.selectedTable}.${filter.column} <= ${filter.value}`;
+              }
               clause = `${filter.column} <= ${filter.value}`;
               break;
             case 'between':

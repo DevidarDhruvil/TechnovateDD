@@ -10,7 +10,8 @@ export interface Query{
   columnList: string[];
   tableData: any[];
   filters: Filter[];
-  joins: Join[]
+  joins: Join[];
+ 
 }
 
 
