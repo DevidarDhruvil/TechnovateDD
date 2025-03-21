@@ -68,4 +68,16 @@ export class ApiService {
     //http://192.168.1.76:5100/api/DynamicQuery/execute
     //http://192.168.1.30:5151/api/dashboard/execute
   }
+  GetSqlQuery(filterBody: any) {
+    console.log('Query Saved:', filterBody);
+    debugger;
+    return this.http.post(
+      'http://192.168.1.76:5400/api/Query/execute',
+      filterBody
+    );
+  }
+  GetsqlData(filterBody:any){
+    return this.http.post('http://192.168.1.76:5400/api/Query/saved',filterBody)
+  }
+
 }

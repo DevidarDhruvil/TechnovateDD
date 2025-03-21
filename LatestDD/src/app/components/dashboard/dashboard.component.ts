@@ -6,6 +6,7 @@ import { HeaderComponent } from '../header/header.component';
 import { Query } from '../../Shared/Interface/Query';
 import { Join } from '../../Shared/Interface/Join';
 import { Filter, FilterColumn } from '../../Shared/Interface/Filter';
+import { SqlHistoryItem } from '../../Shared/Interface/SqlHistoryItem';
 
 @Component({
   selector: 'app-root',
@@ -19,9 +20,15 @@ export class DashboardComponent implements OnInit {
   queries: Query[] = [];
   queryCount = 0;
   selectedQuery: Query | null = null;
-  queryTitle = '';
+  queryTitle='';
   tables: string[] = [];
   apiService = inject(ApiService);
+  isCopied:boolean=false;
+  queryName:string='';
+  queryTitleForSave:string='';
+  sqlHistory:SqlHistoryItem[]=[];
+  userId:number=0;
+  
 
   @ViewChild('overlay') overlay!: ElementRef;
 
@@ -36,6 +43,8 @@ export class DashboardComponent implements OnInit {
   showFilterRowsOverlay = false;
   showGroupSummarizeOverlay = false;
   showSqlTemplateOverlay = false;
+  showSqlHistoryOverlay=false;
+  showSaveSqlOverlay=false;
 
   // Shared options
   joinTypes = ['inner', 'left', 'right', 'full'];
@@ -826,7 +835,7 @@ export class DashboardComponent implements OnInit {
             case 'equals':
               debugger;
               if(this.selectedQuery && this.selectedQuery.joins.length > 0){
-                clause = `${this.selectedQuery?.selectedTable}||${this.selectedJoin?.joinTable}.${filter.column} = '${filter.value}'`;
+                clause = `${this.selectedQuery?.selectedTable}.${filter.column} = '${filter.value}'`;
               }else{
                 clause = `${filter.column} = '${filter.value}'`;
               }
@@ -917,6 +926,91 @@ export class DashboardComponent implements OnInit {
       (err) => {
         console.error('Could not copy text: ', err);
       }
+    );
+  }
+
+  openSaveSqlOverlay() {
+    debugger;
+    this.loadSqlHistory();
+    this.showSaveSqlOverlay = true;
+  }
+
+  // Close the save SQL overlay
+  closeSaveSqlOverlay() {
+    this.showSaveSqlOverlay = false;
+    this.queryName = '';
+    this.queryTitleForSave = '';
+  }
+
+  // Save SQL query to the backend
+  saveSqlQuery() {
+    if (!this.queryName) {
+      alert('Please enter a query name.');
+      return;
+    }
+
+    const filterBody = {
+      sqlQuery: this.sqlTemplate,
+      save: true,
+      queryName: this.queryName,
+      queryTitle: this.queryTitleForSave || this.queryName, // Use queryName if queryTitle is not provided
+      userId: this.userId,
+    };
+
+    this.apiService.GetSqlQuery(filterBody).subscribe(
+      (response) => {
+        console.log('SQL query saved successfully:', response);
+        alert('SQL query saved successfully!');
+        this.closeSaveSqlOverlay();
+      },
+    );
+  }
+
+  sqlHistory1: any[] = [];
+
+  // Show SQL history overlay and fetch history
+  showSqlHistory() {
+    this.showSqlHistoryOverlay = true;
+    this.loadSqlHistorydata()
+  }
+
+  // Close SQL history overlay
+  closeSqlHistoryOverlay() {
+    this.showSqlHistoryOverlay = false;
+  }
+
+  // Fetch SQL history from the backend
+  loadSqlHistory() {
+    const filterBody = {
+      sqlQuery: '', 
+      save: false, 
+      queryName: '',
+      queryTitle: '',
+      userId: this.userId,
+    };
+
+    this.apiService.GetSqlQuery(filterBody).subscribe(
+      (response: any) => {
+        this.sqlHistory = response || [];
+      },
+      (error) => {
+        console.error('Error loading SQL history:', error);
+        alert('Failed to load SQL history.');
+      }
+    );
+  }
+
+  loadSqlHistorydata() { 
+    this.apiService.GetsqlData({ userId: 0 }).subscribe(
+      (res: any) => {
+        console.log("SQL History Data:", res); 
+        if (Array.isArray(res)) {
+          this.sqlHistory1 = res; 
+          console.log(this.sqlHistory1)
+        } else {
+          console.error("Unexpected API response format:", res);
+        }
+      },
     );
   }
 
