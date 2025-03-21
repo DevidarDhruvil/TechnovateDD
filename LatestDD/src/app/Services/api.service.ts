@@ -36,11 +36,11 @@ export class ApiService {
  
 
   //Calls the API to get the Join data of the selected table.
-  GetJoinTableData(joinDetails: any){
-    return this.http.post(`http://192.168.1.76:5100/api/DynamicQuery/execute`,joinDetails);
+  // GetJoinTableData(joinDetails: any){
+    // return this.http.post(`http://192.168.1.76:5100/api/DynamicQuery/execute`,joinDetails);
     //http://192.168.1.30:5151/api/dashboard/execute
     //http://192.168.1.76:5100/api/DynamicQuery/execute
-  }
+  // }
 
 
   //Calls the API to get the Datatype of all columns of the selected table.
@@ -62,12 +62,20 @@ export class ApiService {
 
 
   //Calls the API to get the filter data.
-  GetFilterData(filterBody: any){
-    console.log("filter data pass:",filterBody);
-    return this.http.post("http://192.168.1.76:5100/api/DynamicQuery/execute",filterBody)
+  // GetFilterData(filterBody: any){
+    // console.log("filter data pass:",filterBody);
+    // return this.http.post("http://192.168.1.76:5100/api/DynamicQuery/execute",filterBody)
+    //http://192.168.1.76:5100/api/DynamicQuery/execute
+    //http://192.168.1.30:5151/api/dashboard/execute
+  // }
+
+  //Single API to get the data for Filter and Join both.
+  GetExecuteData(req: any){
+    return this.http.post("http://192.168.1.76:5100/api/DynamicQuery/execute",req);
     //http://192.168.1.76:5100/api/DynamicQuery/execute
     //http://192.168.1.30:5151/api/dashboard/execute
   }
+
   GetSqlQuery(filterBody: any) {
     console.log('Query Saved:', filterBody);
     debugger;
