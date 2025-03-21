@@ -27,6 +27,7 @@ export class DashboardComponent implements OnInit {
   queryName:string='';
   queryTitleForSave:string='';
   sqlHistory:SqlHistoryItem[]=[];
+  sqlHistoryData: any[] = [];
   userId:number=0;
   
 
@@ -966,7 +967,7 @@ export class DashboardComponent implements OnInit {
     );
   }
 
-  sqlHistory1: any[] = [];
+  // sqlHistoryData: any[] = [];
 
   // Show SQL history overlay and fetch history
   showSqlHistory() {
@@ -992,11 +993,11 @@ export class DashboardComponent implements OnInit {
     this.apiService.GetSqlQuery(filterBody).subscribe(
       (response: any) => {
         this.sqlHistory = response || [];
-      },
-      (error) => {
-        console.error('Error loading SQL history:', error);
-        alert('Failed to load SQL history.');
-      }
+       },
+      // (error) => {
+      //   console.error('Error loading SQL history:', error);
+      //   alert('Failed to load SQL history.');
+      // }
     );
   }
 
@@ -1005,8 +1006,8 @@ export class DashboardComponent implements OnInit {
       (res: any) => {
         console.log("SQL History Data:", res); 
         if (Array.isArray(res)) {
-          this.sqlHistory1 = res; 
-          console.log(this.sqlHistory1)
+          this.sqlHistoryData = res; 
+          console.log(this.sqlHistoryData)
         } else {
           console.error("Unexpected API response format:", res);
         }

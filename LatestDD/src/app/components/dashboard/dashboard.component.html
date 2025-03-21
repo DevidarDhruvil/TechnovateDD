@@ -211,8 +211,8 @@
             </button>
           </div>
           <div class="sqlOverlay-body">
-            <div *ngIf="sqlHistory1.length === 0">No saved queries found.</div>
-            <div *ngFor="let historyItem of sqlHistory1" class="history-item">
+            <div *ngIf="sqlHistoryData.length === 0">No saved queries found.</div>
+            <div *ngFor="let historyItem of sqlHistoryData" class="history-item">
                 <h4>{{ historyItem.query_name }}</h4>
                 <p><strong>Title:</strong> {{ historyItem.query_title }}</p>
                 <pre><code>{{ historyItem.query_text }}</code></pre>
