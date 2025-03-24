@@ -569,10 +569,10 @@
               <select [(ngModel)]="group.groupByColumn">
                 <option value="" disabled selected>Select a column</option>
                 <option
-                  *ngFor="let column of filterColumns"
-                  [value]="column.name"
+                  *ngFor="let column of selectedQuery?.columnList"
+                  [value]="column"
                 >
-                  {{ column.name }}
+                  {{ column }}
                 </option>
               </select>
               <label>Aggregate Function:</label>
@@ -586,10 +586,10 @@
               <select [(ngModel)]="group.aggregateColumn">
                 <option value="" disabled selected>Select a column</option>
                 <option
-                  *ngFor="let column of filterColumns"
-                  [value]="column.name"
+                  *ngFor="let column of selectedQuery?.columnList"
+                  [value]="column"
                 >
-                  {{ column.name }}
+                  {{ column }}
                 </option>
               </select>
               <button

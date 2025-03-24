@@ -76,8 +76,12 @@ export class ApiService {
       filterBody
     );
   }
-  GetsqlData(filterBody:any){
-    return this.http.post('http://192.168.1.76:5400/api/Query/saved',filterBody)
+  GetsqlData(sqlBody:any){
+    return this.http.post('http://192.168.1.76:5400/api/Query/saved',sqlBody)
+  }
+
+  GetGrouping(groupingBody:any){
+    return this.http.post('http://192.168.1.30:5151/api/dashboard/groupby-aggregate',groupingBody)
   }
 
 }

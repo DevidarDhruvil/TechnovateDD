@@ -11,7 +11,7 @@ export interface Query{
   tableData: any[];
   filters: Filter[];
   joins: Join[];
- 
+  
 }
 
 

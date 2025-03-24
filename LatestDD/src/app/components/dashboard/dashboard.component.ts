@@ -7,6 +7,7 @@ import { Query } from '../../Shared/Interface/Query';
 import { Join } from '../../Shared/Interface/Join';
 import { Filter, FilterColumn } from '../../Shared/Interface/Filter';
 import { SqlHistoryItem } from '../../Shared/Interface/SqlHistoryItem';
+import { GroupingData } from '../../Shared/Interface/Group';
 
 @Component({
   selector: 'app-root',
@@ -105,12 +106,10 @@ export class DashboardComponent implements OnInit {
     ],
   };
   aggregateFunctions = [
-    'Count of',
-    'Sum of',
-    'Average of',
-    'Minimum of',
-    'Maximum of',
-    'Unique count of',
+    'SUM',
+    'COUNT',
+    'MAX',
+    'MIN'
   ];
 
   // Temporary state for overlays
@@ -236,6 +235,8 @@ export class DashboardComponent implements OnInit {
     this.queryTitle = query.name;
     this.filters = query.filters;
     this.joins = query.joins ?? [];
+
+
 
     if (query.selectedTable) {
       if (query.joins && query.tableData.length === 0) {
@@ -639,9 +640,41 @@ export class DashboardComponent implements OnInit {
   }
 
   applyGroupings() {
-    console.log('Groupings:', this.groupings);
+    console.log('Groupings DETAILS  :', this.groupings);
+    debugger;
+    this.GetGroupingData();
     this.closeGroupSummarizeOverlay();
   }
+  GetGroupingData() {
+    const groupingBody: any = { 
+      tableName: this.selectedQuery?.selectedTable || "",
+      aggregations: this.groupings?.map(group => ({
+        function: group.aggregateFunction, 
+        column: group.aggregateColumn
+      })) || []
+    };
+
+    const groupByColumns = this.groupings?.map(group => group.groupByColumn).filter(col => col) || [];
+    if (groupByColumns.length > 0) {
+      groupingBody.groupByColumns = groupByColumns;
+    }
+    
+    console.log("Request Payload:", JSON.stringify(groupingBody, null, 2)); // Debugging
+    
+  
+    this.apiService.GetGrouping(groupingBody).subscribe(
+      (res: any) => {
+        const groupedData = res as GroupingData[];
+        console.log("Grouped Data:", groupedData);
+        this.selectedQuery!.tableData=res
+        this.selectedQuery!.allColumns=Object.keys(res[0])
+      },
+      (error) => {
+        console.error("Error fetching grouped data:", error);
+      }
+    );
+  }
+
 
   closeGroupSummarizeOverlay() {
     this.showGroupSummarizeOverlay = false;
