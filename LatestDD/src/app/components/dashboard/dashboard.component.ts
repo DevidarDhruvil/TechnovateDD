@@ -9,6 +9,16 @@ import { Filter, FilterColumn } from '../../Shared/Interface/Filter';
 import { SqlHistoryItem } from '../../Shared/Interface/SqlHistoryItem';
 import { GroupingData } from '../../Shared/Interface/Group';
 
+interface Chart{
+  id: number;
+  name: string;
+}
+
+interface Dashboard{
+  id: number;
+  name: string;
+}
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -20,6 +30,13 @@ export class DashboardComponent implements OnInit {
   title = 'DynamicDashboard';
   queries: Query[] = [];
   queryCount = 0;
+
+  charts: Chart[] = [];
+  chartCount = 0;
+
+  dashboards: Dashboard[] = [];
+  dashboardCount = 0;
+
   selectedQuery: Query | null = null;
   queryTitle='';
   tables: string[] = [];
@@ -692,23 +709,29 @@ export class DashboardComponent implements OnInit {
   }
   
   addCharts() {
-    const chartsContainer = document.getElementById('chartsContainer');
-    if (chartsContainer) {
-      const chartDiv = document.createElement('div');
-      chartDiv.textContent = `Chart ${chartsContainer.children.length + 1}`;
-      chartsContainer.appendChild(chartDiv);
-    }
+    this.chartCount++;
+    const newChart: Chart = {
+      id: this.chartCount,
+      name: `Chart ${this.chartCount}`,
+    };
+    this.charts.push(newChart);
+  }
+
+  deleteChart(chartId: number) {
+    this.charts = this.charts.filter((q) => q.id !== chartId);
   }
 
   addDashboard() {
-    const dashboardContainer = document.getElementById('dashboardContainer');
-    if (dashboardContainer) {
-      const dashboardDiv = document.createElement('div');
-      dashboardDiv.textContent = `Dashboard ${
-        dashboardContainer.children.length + 1
-      }`;
-      dashboardContainer.appendChild(dashboardDiv);
-    }
+    this.dashboardCount++;
+    const newDashboard: Dashboard = {
+      id: this.dashboardCount,
+      name: `Dashboard ${this.dashboardCount}`,
+    };
+    this.dashboards.push(newDashboard);
+  }
+
+  deleteDashBoard(dashboardId: number) {
+    this.dashboards = this.dashboards.filter((q) => q.id !== dashboardId);
   }
 
   editTable() {

@@ -31,7 +31,7 @@
               {{ query.name }}
             </button>
             <button class="delete-button" (click)="deleteQuery(query.id)">
-              <i class="fa-solid fa-xmark"></i>
+              <i class="fa-solid fa-xmark deleteopIcons"></i>
             </button>
           </div>
         </div>
@@ -45,8 +45,20 @@
             <h4 class="charttitle">Charts</h4>
             <button id="addchartBtn" (click)="addCharts()">+</button>
           </li>
-          <div id="chartsContainer"></div>
         </ul>
+        <div id="chartsContainer">
+          <div *ngFor="let chart of charts" class="queryItem">
+            <button
+              class="query-button"
+            >
+            <i class="fa-solid fa-chart-simple queryopIcons"></i>
+              {{ chart.name }}
+            </button>
+            <button class="delete-button" (click)="deleteChart(chart.id)">
+              <i class="fa-solid fa-xmark deleteopIcons"></i>
+            </button>
+          </div>
+        </div>
       </div>
 
       <hr />
@@ -57,8 +69,20 @@
             <h4 class="dashboardtitle">Dashboard</h4>
             <button id="adddashboardBtn" (click)="addDashboard()">+</button>
           </li>
-          <div id="dashboardContainer"></div>
         </ul>
+        <div id="dashboardContainer">
+          <div *ngFor="let dashboard of dashboards" class="queryItem">
+            <button
+              class="query-button"
+            >
+            <i class="fa-solid fa-square-poll-horizontal queryopIcons"></i>
+              {{ dashboard.name }}
+            </button>
+            <button class="delete-button" (click)="deleteDashBoard(dashboard.id)">
+              <i class="fa-solid fa-xmark deleteopIcons"></i>
+            </button>
+          </div>
+        </div>
       </div>
 
       <hr />
