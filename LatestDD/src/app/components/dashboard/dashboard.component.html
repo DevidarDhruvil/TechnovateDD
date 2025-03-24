@@ -397,7 +397,7 @@
                   </option>
                 </select>
 
-                <span>=</span>
+                <span class="join-operator">=</span>
 
                 <!-- Right (Target) Column -->
                 <select [(ngModel)]="selectedJoin!.targetColumn">
@@ -585,10 +585,10 @@
         <div class="gas-overlay" *ngIf="showGroupSummarizeOverlay">
           <div class="gas-overlay-content">
             <h4>Group and Summarize</h4>
+            <div class="gas-grouping-container-scrollbar">
             <div
               *ngFor="let group of groups; let i = index"
-              class="gas-grouping-container"
-            >
+              class="gas-grouping-container">
               <label>Group By Column:</label>
               <select [(ngModel)]="group.groupByColumn">
                 <option value="" disabled selected>Select a column</option>
@@ -624,6 +624,7 @@
                 Remove
               </button>
             </div>
+          </div>
             <button class="gas-add-btn" (click)="addGrouping()">
               Add Grouping
             </button>
@@ -634,6 +635,7 @@
             </div>
           </div>
         </div>
+
 
         <!-- SELECTED INFO -->
         <div class="selected-query-container">

@@ -1,5 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, HostListener, OnInit, ViewChild, inject } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  OnInit,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../Services/api.service';
 import { HeaderComponent } from '../header/header.component';
@@ -8,16 +15,18 @@ import { Join } from '../../Shared/Interface/Join';
 import { Filter, FilterColumn } from '../../Shared/Interface/Filter';
 import { SqlHistoryItem } from '../../Shared/Interface/SqlHistoryItem';
 import { GroupingData } from '../../Shared/Interface/Group';
+import { Chart } from '../../Shared/Interface/Charts';
+import { Dashboard } from '../../Shared/Interface/Dashboard';
 
-interface Chart{
-  id: number;
-  name: string;
-}
+// interface Chart{
+//   id: number;
+//   name: string;
+// }
 
-interface Dashboard{
-  id: number;
-  name: string;
-}
+// interface Dashboard{
+//   id: number;
+//   name: string;
+// }
 
 @Component({
   selector: 'app-root',
@@ -38,16 +47,15 @@ export class DashboardComponent implements OnInit {
   dashboardCount = 0;
 
   selectedQuery: Query | null = null;
-  queryTitle='';
+  queryTitle = '';
   tables: string[] = [];
   apiService = inject(ApiService);
-  isCopied:boolean=false;
-  queryName:string='';
-  queryTitleForSave:string='';
-  sqlHistory:SqlHistoryItem[]=[];
+  isCopied: boolean = false;
+  queryName: string = '';
+  queryTitleForSave: string = '';
+  sqlHistory: SqlHistoryItem[] = [];
   sqlHistoryData: any[] = [];
-  userId:number=0;
-  
+  userId: number = 0;
 
   @ViewChild('overlay') overlay!: ElementRef;
 
@@ -62,12 +70,20 @@ export class DashboardComponent implements OnInit {
   showFilterRowsOverlay = false;
   showGroupSummarizeOverlay = false;
   showSqlTemplateOverlay = false;
-  showSqlHistoryOverlay=false;
-  showSaveSqlOverlay=false;
+  showSqlHistoryOverlay = false;
+  showSaveSqlOverlay = false;
 
   // Shared options
   joinTypes = ['inner', 'left', 'right', 'full'];
-  columnTypes = [ 'String', 'Text', 'Integer', 'Decimal', 'Date', 'Time', 'Datetime'];
+  columnTypes = [
+    'String',
+    'Text',
+    'Integer',
+    'Decimal',
+    'Date',
+    'Time',
+    'Datetime',
+  ];
   filterColumns: FilterColumn[] = [
     {
       name: 'Customer Name',
@@ -122,12 +138,7 @@ export class DashboardComponent implements OnInit {
       'between',
     ],
   };
-  aggregateFunctions = [
-    'SUM',
-    'COUNT',
-    'MAX',
-    'MIN'
-  ];
+  aggregateFunctions = ['SUM', 'COUNT', 'MAX', 'MIN'];
 
   // Temporary state for overlays
   newColumnExpression = '';
@@ -142,7 +153,6 @@ export class DashboardComponent implements OnInit {
 
   selectedJoin: Join | null = null;
   joinIndex: number = 0;
-
 
   ngOnInit(): void {
     this.getTableNames();
@@ -161,12 +171,12 @@ export class DashboardComponent implements OnInit {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
       this.sortColumn = column;
-      this.sortDirection = 'asc';  // Default to ascending order when a new column is clicked.
+      this.sortDirection = 'asc'; // Default to ascending order when a new column is clicked.
     }
- 
+
     const tableData = this.selectedQuery?.tableData;
     if (!tableData) return;
- 
+
     // Function to classify and extract text and numbers
     const classifyValue = (value: string) => {
       if (/^\d+$/.test(value)) {
@@ -181,42 +191,46 @@ export class DashboardComponent implements OnInit {
       }
       return { type: 'string', value };
     };
- 
+
     tableData.sort((a, b) => {
       const aValue = a[column];
       const bValue = b[column];
- 
+
       const aParts = classifyValue(aValue);
       const bParts = classifyValue(bValue);
- 
+
       const direction = this.sortDirection === 'asc' ? 1 : -1;
- 
+
       // If both are numbers, compare them numerically
       if (aParts.type === 'number' && bParts.type === 'number') {
-        return direction * (aParts.value as number) -( bParts.value as number);
+        return direction * (aParts.value as number) - (bParts.value as number);
       }
- 
+
       // If one is a number and the other is not, numbers should come first
       if (aParts.type === 'number' && bParts.type !== 'number') {
-        return direction * -1;  // Numbers come before strings
+        return direction * -1; // Numbers come before strings
       }
       if (aParts.type !== 'number' && bParts.type === 'number') {
-        return direction * 1;   // Strings come after numbers
+        return direction * 1; // Strings come after numbers
       }
- 
+
       // Sorting logic for strings with numbers (e.g., Name_12, Name_11)
-      if (aParts.type === 'stringWithNumber' && bParts.type === 'stringWithNumber') {
+      if (
+        aParts.type === 'stringWithNumber' &&
+        bParts.type === 'stringWithNumber'
+      ) {
         if (aParts.text && bParts.text && aParts.text !== bParts.text) {
           return direction * aParts.text.localeCompare(bParts.text); // Compare the text part
         }
         return direction * (aParts.number ?? 0 - (bParts.number ?? 0)); // If text is the same, compare the numeric part
       }
- 
- 
+
       // Pure strings should be sorted alphabetically
-    return direction * String(aParts.value).localeCompare(String(bParts.value));
+      return (
+        direction * String(aParts.value).localeCompare(String(bParts.value))
+      );
     });
- 
+
     // After sorting, update the table data
     this.selectedQuery!.tableData = tableData;
   }
@@ -251,8 +265,6 @@ export class DashboardComponent implements OnInit {
     this.filters = query.filters;
     this.joins = query.joins ?? [];
     this.groups = query.groups;
-
-
 
     if (query.selectedTable) {
       if (query.joins && query.tableData.length === 0) {
@@ -296,7 +308,6 @@ export class DashboardComponent implements OnInit {
     this.apiService.GetColumnApi(table).subscribe((res: any) => {
       if (this.selectedQuery) {
         this.selectedQuery.columnList = res;
-       
       }
       if (!this.selectedJoin) {
         this.selectedJoin = {
@@ -307,48 +318,47 @@ export class DashboardComponent implements OnInit {
           joinTable: '',
           joinType: '',
           rightColumns: [],
-          re:[]
+          re: [],
         };
       }
-      const columnList:any = [...res]; // Define columnList as a separate variable
-      this.selectedJoin.sourceColumns = [columnList]; 
-      console.log( this.selectedJoin.sourceColumns)
-      
+      const columnList: any = [...res]; // Define columnList as a separate variable
+      this.selectedJoin.sourceColumns = [columnList];
+      console.log(this.selectedJoin.sourceColumns);
     });
   }
 
   dataType: Record<string, string> = {};
 
-  fetchDataTypeData(table:string){
+  fetchDataTypeData(table: string) {
     this.apiService.GetDataTypeData(table).subscribe((res: any) => {
       this.dataType = res;
       console.log(this.dataType);
-    })
+    });
   }
 
   fetchDistinctColValues(index: number, columnName: string, tableName: string) {
-    this.apiService.GetDistinctColValues(tableName, columnName).subscribe((res: any)=> {
-      this.filters[index].availableValues = res || [];
-    })
+    this.apiService
+      .GetDistinctColValues(tableName, columnName)
+      .subscribe((res: any) => {
+        this.filters[index].availableValues = res || [];
+      });
   }
 
-  fetchFilterData(filterDetails: any){
-    if (
-      this.selectedQuery &&
-      this.selectedQuery.selectedTable
-    ) {
-    const query = this.selectedQuery;
-      this.apiService.GetFilterData(filterDetails).subscribe((res: any) => {
-        if (res.length === 0) {
-          query.tableData = [];
-        } else {
-          query.allColumns = Object.keys(res[0]);
-          query.tableData = res;
-          // query.selectedColumns = [...query.allColumns];
-        }
-        }
-      );
-  }
+  fetchFilterData(filterDetails: any) {
+    if (this.selectedQuery && this.selectedQuery.selectedTable) {
+      const query = this.selectedQuery;
+      this.apiService
+        .GetExecuteJoinFilter(filterDetails)
+        .subscribe((res: any) => {
+          if (res.length === 0) {
+            query.tableData = [];
+          } else {
+            query.allColumns = Object.keys(res[0]);
+            query.tableData = res;
+            // query.selectedColumns = [...query.allColumns];
+          }
+        });
+    }
   }
 
   fetchTableData() {
@@ -373,7 +383,6 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-
   closeTableOverlay() {
     this.showTableOverlay = false;
   }
@@ -390,74 +399,81 @@ export class DashboardComponent implements OnInit {
   // }
 
   RightTable(table: string, joinIndex: number) {
-    console.log("Current joins array:", this.selectedQuery?.joins);
-    console.log("Trying to access index:", joinIndex);
- 
+    console.log('Current joins array:', this.selectedQuery?.joins);
+    console.log('Trying to access index:', joinIndex);
+
     // Check if selectedQuery exists
     if (!this.selectedQuery) {
-        console.error("Error: selectedQuery is null or undefined!");
-        return;
+      console.error('Error: selectedQuery is null or undefined!');
+      return;
     }
- 
+
     // Initialize joins array if it doesn't exist
     if (!this.selectedQuery.joins) {
-        console.log("Initializing joins array...");
-        this.selectedQuery.joins = [];
+      console.log('Initializing joins array...');
+      this.selectedQuery.joins = [];
     }
- 
+
     // Validate joinIndex
     if (joinIndex < 0) {
-        console.error("Error: joinIndex cannot be negative:", joinIndex);
-        return;
+      console.error('Error: joinIndex cannot be negative:', joinIndex);
+      return;
     }
- 
+
     // Ensure enough join objects exist
     while (this.selectedQuery.joins.length <= joinIndex) {
-        console.log(`Adding empty join object at index ${this.selectedQuery.joins.length}`);
-        this.selectedQuery.joins.push({
-          joinTable: "",
-          sourceColumn: "",
-          targetColumn: "",
-          joinType: "",
-          rightColumns: [],
-          sourceColumns: [],    // Added missing property
-          targetColumns: [] ,    // Added missing property
-          re:[]
-        });
+      console.log(
+        `Adding empty join object at index ${this.selectedQuery.joins.length}`
+      );
+      this.selectedQuery.joins.push({
+        joinTable: '',
+        sourceColumn: '',
+        targetColumn: '',
+        joinType: '',
+        rightColumns: [],
+        sourceColumns: [], // Added missing property
+        targetColumns: [], // Added missing property
+        re: [],
+      });
     }
- 
-    console.log("After modification, joins array length:", this.selectedQuery.joins.length);
-    console.log("Target index:", joinIndex);
-    console.log("Full joins array:", this.selectedQuery.joins);
- 
+
+    console.log(
+      'After modification, joins array length:',
+      this.selectedQuery.joins.length
+    );
+    console.log('Target index:', joinIndex);
+    console.log('Full joins array:', this.selectedQuery.joins);
+
     // Verify the join object exists before modifying it
     if (this.selectedQuery.joins[joinIndex] === undefined) {
-        console.error(`Error: Join object at index ${joinIndex} is undefined!`);
-        return;
+      console.error(`Error: Join object at index ${joinIndex} is undefined!`);
+      return;
     }
-    
+
     console.log(`Set joinTable to ${table} at index ${joinIndex}`);
     this.selectedJoin = this.selectedQuery.joins[joinIndex];
     this.selectedJoin.joinTable = table;
     this.fetchRightColumnNames(table, joinIndex);
-} 
+  }
 
   fetchRightColumnNames(table: string, joinIndex: number) {
     debugger;
     this.apiService.GetColumnApi(table).subscribe((res: any) => {
-      if (this.selectedQuery ) {
+      if (this.selectedQuery) {
         debugger;
         this.selectedQuery.joins[joinIndex].rightColumns = res;
         this.selectedQuery.joins[joinIndex].re = res;
-        console.log("Right column data ",this.selectedJoin?.re)
+        console.log('Right column data ', this.selectedJoin?.re);
       }
-     
-      
     });
   }
 
   confirmJoinTable() {
-    if (this.selectedQuery && this.selectedJoin !== null && this.joinIndex !== -1 ) {
+    if (
+      this.selectedQuery &&
+      this.selectedJoin !== null &&
+      this.joinIndex !== -1
+    ) {
       this.fetchJoinData();
       this.selectedQuery.filters = [];
       this.filters = [...this.selectedQuery.filters];
@@ -467,29 +483,27 @@ export class DashboardComponent implements OnInit {
   }
 
   fetchJoinData() {
-    if (
-      this.selectedQuery &&
-      this.selectedQuery.selectedTable
-    ) {
-
+    if (this.selectedQuery && this.selectedQuery.selectedTable) {
       const requestBody = {
         tableName: this.selectedQuery.selectedTable,
-        joins: this.selectedQuery.joins
-      }
+        joins: this.selectedQuery.joins,
+      };
 
-      this.apiService.GetJoinTableData(requestBody).subscribe((res: any) => {
-        if (res.length === 0) {
-          // query.tableData = [];
-          // query.selectedColumns = [];
-          this.selectedQuery!.tableData = [];
-          this.selectedQuery!.selectedColumns = [];
-        } else {
-          // query.allColumns = Object.keys(res[0]);
-          // query.tableData = res;
-          this.selectedQuery!.allColumns = Object.keys(res[0]);
-          this.selectedQuery!.tableData = res;
-        }
-      });
+      this.apiService
+        .GetExecuteJoinFilter(requestBody)
+        .subscribe((res: any) => {
+          if (res.length === 0) {
+            // query.tableData = [];
+            // query.selectedColumns = [];
+            this.selectedQuery!.tableData = [];
+            this.selectedQuery!.selectedColumns = [];
+          } else {
+            // query.allColumns = Object.keys(res[0]);
+            // query.tableData = res;
+            this.selectedQuery!.allColumns = Object.keys(res[0]);
+            this.selectedQuery!.tableData = res;
+          }
+        });
     }
   }
 
@@ -534,7 +548,7 @@ export class DashboardComponent implements OnInit {
   }
 
   addFilter() {
-    if(this.selectedQuery){
+    if (this.selectedQuery) {
       this.selectedQuery.filters = [
         ...this.selectedQuery.filters,
         {
@@ -548,14 +562,14 @@ export class DashboardComponent implements OnInit {
           condition: 'AND',
         },
       ];
-  
+
       // ✅ Ensure Angular detects the change
       this.filters = [...this.selectedQuery.filters];
     }
   }
 
   removeFilter(index: number) {
-    if(this.selectedQuery){
+    if (this.selectedQuery) {
       this.selectedQuery.filters.splice(index, 1);
       // ✅ Ensure the UI updates
       this.filters = [...this.selectedQuery.filters];
@@ -567,17 +581,21 @@ export class DashboardComponent implements OnInit {
     const columnType = this.dataType[selectedColumn]; // Get data type from dataType object
 
     if (columnType) {
-      this.filters[index].availableOperations = this.operations[columnType] || [];
+      this.filters[index].availableOperations =
+        this.operations[columnType] || [];
       this.filters[index].operation = '';
       this.filters[index].availableValues = []; // Reset values when column changes
 
       // Fetch values for the selected column
       if (this.selectedQuery?.selectedTable) {
-        this.fetchDistinctColValues(index, selectedColumn, this.selectedQuery.selectedTable);
+        this.fetchDistinctColValues(
+          index,
+          selectedColumn,
+          this.selectedQuery.selectedTable
+        );
       }
     }
   }
-  
 
   updateValues(index: number) {
     const selectedColumn = this.filterColumns.find(
@@ -589,7 +607,7 @@ export class DashboardComponent implements OnInit {
   }
 
   clearFilters() {
-    if(this.selectedQuery){
+    if (this.selectedQuery) {
       this.selectedQuery.filters = [];
       this.filters = [...this.selectedQuery.filters];
       this.fetchTableData();
@@ -601,33 +619,40 @@ export class DashboardComponent implements OnInit {
       alert('Please select a table first.');
       return;
     }
-    
+
     const filters = this.filters
-    .filter(filter => filter.column && filter.operation && (filter.operation !== 'between' || (filter.valueStart && filter.valueEnd))) // Ensure valid filters
-        .map((filter, index) => {
-            const filterObject: any = {
-                columnName: filter.column,
-                condition: filter.operation,
-                value: filter.operation === 'between'
-                  ? [filter.valueStart, filter.valueEnd]  // For 'between' operation, use a range
-                  : filter.value.toString(), // Convert value to string for consistency
-            };
+      .filter(
+        (filter) =>
+          filter.column &&
+          filter.operation &&
+          (filter.operation !== 'between' ||
+            (filter.valueStart && filter.valueEnd))
+      ) // Ensure valid filters
+      .map((filter, index) => {
+        const filterObject: any = {
+          columnName: filter.column,
+          condition: filter.operation,
+          value:
+            filter.operation === 'between'
+              ? [filter.valueStart, filter.valueEnd] // For 'between' operation, use a range
+              : filter.value.toString(), // Convert value to string for consistency
+        };
 
-            // Add logicalOperator only if there’s more than one filter
-            if (this.filters.length > 1 && index !== this.filters.length - 1) {
-                filterObject.logicalOperator = filter.condition; // AND/OR
-            }
+        // Add logicalOperator only if there’s more than one filter
+        if (this.filters.length > 1 && index !== this.filters.length - 1) {
+          filterObject.logicalOperator = filter.condition; // AND/OR
+        }
 
-            return filterObject;
-        });
+        return filterObject;
+      });
 
-        const requestBody = {
-          tableName: this.selectedQuery.selectedTable,
-          joins: this.selectedQuery.joins,
-          filters: filters,
-      };
+    const requestBody = {
+      tableName: this.selectedQuery.selectedTable,
+      joins: this.selectedQuery.joins,
+      filters: filters,
+    };
 
-    console.log("filterConditions:" ,requestBody);
+    console.log('filterConditions:', requestBody);
 
     this.fetchFilterData(requestBody);
     this.closeFilterRowsOverlay();
@@ -644,16 +669,16 @@ export class DashboardComponent implements OnInit {
     //   aggregateColumn: '',
     // });
 
-    if(this.selectedQuery){
+    if (this.selectedQuery) {
       this.selectedQuery.groups = [
         ...this.selectedQuery.groups,
         {
           groupByColumn: '',
-      aggregateFunction: '',
-      aggregateColumn: '',
+          aggregateFunction: '',
+          aggregateColumn: '',
         },
       ];
-  
+
       // ✅ Ensure Angular detects the change
       this.groups = [...this.selectedQuery.groups];
     }
@@ -674,40 +699,41 @@ export class DashboardComponent implements OnInit {
     this.closeGroupSummarizeOverlay();
   }
   GetGroupingData() {
-    const groupingBody: any = { 
-      tableName: this.selectedQuery?.selectedTable || "",
-      aggregations: this.groups?.map(group => ({
-        function: group.aggregateFunction, 
-        column: group.aggregateColumn
-      })) || []
+    const groupingBody: any = {
+      tableName: this.selectedQuery?.selectedTable || '',
+      aggregations:
+        this.groups?.map((group) => ({
+          function: group.aggregateFunction,
+          column: group.aggregateColumn,
+        })) || [],
     };
 
-    const groupByColumns = this.groups?.map(group => group.groupByColumn).filter(col => col) || [];
+    const groupByColumns =
+      this.groups?.map((group) => group.groupByColumn).filter((col) => col) ||
+      [];
     if (groupByColumns.length > 0) {
       groupingBody.groupByColumns = groupByColumns;
     }
-    
-    console.log("Request Payload:", JSON.stringify(groupingBody, null, 2)); // Debugging
-    
-  
+
+    console.log('Request Payload:', JSON.stringify(groupingBody, null, 2)); // Debugging
+
     this.apiService.GetGrouping(groupingBody).subscribe(
       (res: any) => {
         const groupedData = res as GroupingData[];
-        console.log("Grouped Data:", groupedData);
-        this.selectedQuery!.tableData=res
-        this.selectedQuery!.allColumns=Object.keys(res[0])
+        console.log('Grouped Data:', groupedData);
+        this.selectedQuery!.tableData = res;
+        this.selectedQuery!.allColumns = Object.keys(res[0]);
       },
       (error) => {
-        console.error("Error fetching grouped data:", error);
+        console.error('Error fetching grouped data:', error);
       }
     );
   }
 
-
   closeGroupSummarizeOverlay() {
     this.showGroupSummarizeOverlay = false;
   }
-  
+
   addCharts() {
     this.chartCount++;
     const newChart: Chart = {
@@ -747,7 +773,7 @@ export class DashboardComponent implements OnInit {
     this.showJoinTableOverlay = true;
   }
 
-  editFilter(){
+  editFilter() {
     this.showFilterRowsOverlay = true;
   }
 
@@ -834,34 +860,63 @@ export class DashboardComponent implements OnInit {
     if (this.selectedQuery) {
       // Check if columns are selected
       if (this.selectedQuery.selectedColumns.length > 0) {
+        // Extract GROUP BY columns before using them in the mapping function
+        const groupColumns = this.groups
+          .filter((g) => g.groupByColumn)
+          .map((g) => g.groupByColumn);
+
+        console.log('Group By Columns:', groupColumns);
+
+        // Extract Aggregation columns before using them
+        const aggregateColumns = this.groups
+          .filter((g) => g.aggregateFunction && g.aggregateColumn)
+          .map((g) => `${g.aggregateFunction}(${g.aggregateColumn})`);
+
+        console.log('Aggregate Columns:', aggregateColumns);
+
         sql += `SELECT ${this.selectedQuery.selectedColumns
-          .map(col => {
+          .map((col) => {
             // If column belongs to the main table and joins exist, prefix with table name
-            if (this.selectedQuery?.columnList?.includes(col) && this.selectedQuery.joins.length > 0) {
+            if (
+              this.selectedQuery?.columnList?.includes(col) &&
+              this.selectedQuery.joins.length > 0
+            ) {
               return `${this.selectedQuery?.selectedTable}.${col}`;
-            } 
+            }
             // If column belongs to the main table and no joins exist, return column without prefix
             else if (this.selectedQuery?.columnList?.includes(col)) {
               return `${col}`;
-            } 
+            }
             // If the column belongs to a joined table, prefix it with the join table name
-            else if (this.selectedQuery?.joins.some(j => j.re.includes(col))) {
-              const matchingJoin = this.selectedQuery.joins.find(j => j.re.includes(col));
+            else if (
+              this.selectedQuery?.joins.some((j) => j.re.includes(col))
+            ) {
+              const matchingJoin = this.selectedQuery.joins.find((j) =>
+                j.re.includes(col)
+              );
               return `${matchingJoin?.joinTable}.${col}`;
+            }
+            // If groups exist, add group and aggregate columns
+            else if (this.selectedQuery?.groups) {
+              return ` ${aggregateColumns.join(', ')}\n`;
             }
             return col; // Default return (shouldn't happen often)
           })
           .join(', ')} FROM ${this.selectedQuery.selectedTable}\n`;
-      } 
-      else {
+      } else {
         // No columns selected, select all
         sql += `SELECT * FROM ${this.selectedQuery.selectedTable};\n`;
       }
 
       // Add JOIN if present
       if (this.selectedQuery.joins.length > 0) {
-        this.selectedQuery.joins.forEach(join => {
-          if (join.joinTable && join.sourceColumn && join.targetColumn && join.joinType.length >= 1) {
+        this.selectedQuery.joins.forEach((join) => {
+          if (
+            join.joinTable &&
+            join.sourceColumn &&
+            join.targetColumn &&
+            join.joinType.length >= 1
+          ) {
             const joinType = join.joinType.toUpperCase();
             sql += `${joinType} JOIN ${join.joinTable} ON ${this.selectedQuery?.selectedTable}.${join.sourceColumn} = ${join.joinTable}.${join.targetColumn}\n`;
           }
@@ -887,7 +942,6 @@ export class DashboardComponent implements OnInit {
           // Format the condition based on operation type
           switch (filter.operation) {
             case 'contains':
-              
               clause = `${filter.column} LIKE '%${filter.value}%'`;
               break;
             case 'does not contain':
@@ -902,40 +956,40 @@ export class DashboardComponent implements OnInit {
             case 'is':
             case 'equals':
               debugger;
-              if(this.selectedQuery && this.selectedQuery.joins.length > 0){
+              if (this.selectedQuery && this.selectedQuery.joins.length > 0) {
                 clause = `${this.selectedQuery?.selectedTable}.${filter.column} = '${filter.value}'`;
-              }else{
+              } else {
                 clause = `${filter.column} = '${filter.value}'`;
               }
-              
+
               break;
             case 'is not':
             case 'not equals':
-              if(this.selectedQuery && this.selectedQuery.joins.length > 0){
+              if (this.selectedQuery && this.selectedQuery.joins.length > 0) {
                 clause = `${this.selectedQuery?.selectedTable}.${filter.column} != '${filter.value}'`;
               }
               clause = `${filter.column} != '${filter.value}'`;
               break;
             case 'greater than':
-              if(this.selectedQuery && this.selectedQuery.joins.length > 0){
+              if (this.selectedQuery && this.selectedQuery.joins.length > 0) {
                 clause = `${this.selectedQuery?.selectedTable}.${filter.column} > ${filter.value}`;
               }
               clause = `${filter.column} > ${filter.value}`;
               break;
             case 'greater than or equals':
-              if(this.selectedQuery && this.selectedQuery.joins.length > 0){
+              if (this.selectedQuery && this.selectedQuery.joins.length > 0) {
                 clause = `${this.selectedQuery?.selectedTable}.${filter.column} >= ${filter.value}`;
               }
               clause = `${filter.column} >= ${filter.value}`;
               break;
             case 'less than':
-              if(this.selectedQuery && this.selectedQuery.joins.length > 0){
-                clause = `${this.selectedQuery?.selectedTable}.${filter.column} < ${filter.value}`; 
+              if (this.selectedQuery && this.selectedQuery.joins.length > 0) {
+                clause = `${this.selectedQuery?.selectedTable}.${filter.column} < ${filter.value}`;
               }
               clause = `${filter.column} < ${filter.value}`;
               break;
             case 'less than or equals':
-              if(this.selectedQuery && this.selectedQuery.joins.length > 0){
+              if (this.selectedQuery && this.selectedQuery.joins.length > 0) {
                 clause = `${this.selectedQuery?.selectedTable}.${filter.column} <= ${filter.value}`;
               }
               clause = `${filter.column} <= ${filter.value}`;
@@ -961,18 +1015,35 @@ export class DashboardComponent implements OnInit {
     }
 
     // Add GROUP BY and aggregation if present
-    if (this.groups.some((g) => g.groupByColumn)) {
+    // Add GROUP BY and aggregation if present
+    if (
+      this.groups.some((g) => g.groupByColumn) &&
+      this.groups.some((g) => g.aggregateColumn)
+    ) {
       const groupColumns = this.groups
         .filter((g) => g.groupByColumn)
         .map((g) => g.groupByColumn);
-
+      const aggregateColumns = this.groups
+        .filter((g) => g.aggregateColumn)
+        .map((g) => g.aggregateColumn);
+      // sql += `${groupColumns.join(", ")}, ${aggregateColumns.join(", ")}\n`;
       if (groupColumns.length > 0) {
+        debugger;
         sql += `GROUP BY ${groupColumns.join(', ')}\n`;
       }
-
-      // Add HAVING clause for aggregate filters if needed
-      // (This would be more complex and would depend on your specific implementation)
     }
+    // if (this.groups.some((g) => g.groupByColumn))
+    // {
+    //   const groupColumns = this.groups
+    //     .filter((g) => g.groupByColumn)
+    //     .map((g) => g.groupByColumn);
+    //     console.log(groupColumns)
+
+    //   if (groupColumns.length > 0) {
+    //     debugger;
+    //     sql += `GROUP BY ${groupColumns.join(', ')}\n`;
+    //   }
+    // }
 
     // Add any custom expressions
     if (this.customExpression) {
@@ -1025,13 +1096,11 @@ export class DashboardComponent implements OnInit {
       userId: this.userId,
     };
 
-    this.apiService.GetSqlQuery(filterBody).subscribe(
-      (response) => {
-        console.log('SQL query saved successfully:', response);
-        alert('SQL query saved successfully!');
-        this.closeSaveSqlOverlay();
-      },
-    );
+    this.apiService.GetSqlQuery(filterBody).subscribe((response) => {
+      console.log('SQL query saved successfully:', response);
+      alert('SQL query saved successfully!');
+      this.closeSaveSqlOverlay();
+    });
   }
 
   // sqlHistoryData: any[] = [];
@@ -1039,7 +1108,7 @@ export class DashboardComponent implements OnInit {
   // Show SQL history overlay and fetch history
   showSqlHistory() {
     this.showSqlHistoryOverlay = true;
-    this.loadSqlHistorydata()
+    this.loadSqlHistorydata();
   }
 
   // Close SQL history overlay
@@ -1050,8 +1119,8 @@ export class DashboardComponent implements OnInit {
   // Fetch SQL history from the backend
   loadSqlHistory() {
     const filterBody = {
-      sqlQuery: '', 
-      save: false, 
+      sqlQuery: '',
+      save: false,
       queryName: '',
       queryTitle: '',
       userId: this.userId,
@@ -1060,7 +1129,7 @@ export class DashboardComponent implements OnInit {
     this.apiService.GetSqlQuery(filterBody).subscribe(
       (response: any) => {
         this.sqlHistory = response || [];
-       },
+      }
       // (error) => {
       //   console.error('Error loading SQL history:', error);
       //   alert('Failed to load SQL history.');
@@ -1068,18 +1137,16 @@ export class DashboardComponent implements OnInit {
     );
   }
 
-  loadSqlHistorydata() { 
-    this.apiService.GetsqlData({ userId: 0 }).subscribe(
-      (res: any) => {
-        console.log("SQL History Data:", res); 
-        if (Array.isArray(res)) {
-          this.sqlHistoryData = res; 
-          console.log(this.sqlHistoryData)
-        } else {
-          console.error("Unexpected API response format:", res);
-        }
-      },
-    );
+  loadSqlHistorydata() {
+    this.apiService.GetsqlData({ userId: 0 }).subscribe((res: any) => {
+      console.log('SQL History Data:', res);
+      if (Array.isArray(res)) {
+        this.sqlHistoryData = res;
+        console.log(this.sqlHistoryData);
+      } else {
+        console.error('Unexpected API response format:', res);
+      }
+    });
   }
 
   @HostListener('document:click', ['$event'])

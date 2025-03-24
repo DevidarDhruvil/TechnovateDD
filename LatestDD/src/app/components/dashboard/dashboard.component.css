@@ -78,6 +78,9 @@ table {
   overflow-y: auto;
 }
 
+
+
+
 td {
   padding: 8px;
   text-align: left;
@@ -353,6 +356,11 @@ input[type="checkbox"] {
   font-size: 20px;
   font-weight: bold;
 }
+.join-operator{
+  position: relative;
+  align-items: center;
+  bottom: 6px;
+}
 
 .buttons {
   display: flex;
@@ -621,7 +629,7 @@ input[type="checkbox"] {
   border-radius: 8px;
   width: 450px;
   max-height: 80vh;
-  overflow-y: auto;
+  /* overflow-y: auto; */
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -643,6 +651,7 @@ input[type="checkbox"] {
   margin-bottom: 15px;
 }
 
+
 .gas-grouping-container {
   display: flex;
   flex-direction: column;
@@ -650,6 +659,13 @@ input[type="checkbox"] {
   margin-bottom: 15px;
   border-bottom: 1px solid #ddd;
   padding-bottom: 10px;
+
+}
+
+
+.gas-grouping-container-scrollbar{
+  max-height: 229px; /* Set a fixed height */
+  overflow-y: auto; /* Enables scrolling */
 }
 
 label {
@@ -668,12 +684,12 @@ label {
   border: 1px solid rgba(0, 0, 0, 0.2);
   margin-top: 8px;
   padding: 6px 10px;
-  /* padding: 4px; */
   cursor: pointer;
   border-radius: 4px;
   margin-bottom: 10px;
   margin-top: 10px;
 }
+
 
 .gas-remove-btn {
   border: 1px solid rgba(0, 0, 0, 0.2);
@@ -1118,6 +1134,7 @@ form button:hover {
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  width: 200%;
 }
 
 .history-item h4 {

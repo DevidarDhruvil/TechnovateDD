@@ -21,12 +21,12 @@ interface UserProfile {
 })
 export class ProfileComponent implements OnInit {
   userProfile: UserProfile = {
-    firstName: 'Dhruv',
-    lastName: 'Vaishnav',
-    username: 'dhruvxvaishnav',
-    email: 'Dhruv.Technovate.In',
-    phone: '+91 87809 22219',
-    address: 'Corus Heights',
+    firstName: 'Meet ',
+    lastName: 'Ponkiya',
+    username: 'Meet47P',
+    email: 'Meet.Technovate.In',
+    phone: '+91 8320442877',
+    address: 'House',
   };
  
   // Create a copy for editing
