@@ -233,6 +233,7 @@ export class DashboardComponent implements OnInit {
     this.queryTitle = query.name;
     this.filters = query.filters;
     this.joins = query.joins ?? [];
+    this.groups = query.groups;
 
 
 
