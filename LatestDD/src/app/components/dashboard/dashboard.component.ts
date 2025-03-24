@@ -121,13 +121,11 @@ export class DashboardComponent implements OnInit {
   customExpression = '';
   filters: Filter[] = [];
   joins: Join[] = [];
+  groups: GroupingData[] = [];
 
   selectedJoin: Join | null = null;
   joinIndex: number = 0;
 
-  groupings = [
-    { groupByColumn: '', aggregateFunction: '', aggregateColumn: '' },
-  ];
 
   ngOnInit(): void {
     this.getTableNames();
@@ -224,7 +222,7 @@ export class DashboardComponent implements OnInit {
       tableData: [],
       joins: [],
       filters: [],
-      
+      groups: [],
     };
     this.queries.push(newQuery);
     this.openQuery(newQuery);
@@ -622,25 +620,37 @@ export class DashboardComponent implements OnInit {
   }
 
   addGrouping() {
-    this.groupings.push({
-      groupByColumn: '',
+    // this.groups.push({
+    //   groupByColumn: '',
+    //   aggregateFunction: '',
+    //   aggregateColumn: '',
+    // });
+
+    if(this.selectedQuery){
+      this.selectedQuery.groups = [
+        ...this.selectedQuery.groups,
+        {
+          groupByColumn: '',
       aggregateFunction: '',
       aggregateColumn: '',
-    });
+        },
+      ];
+  
+      // ✅ Ensure Angular detects the change
+      this.groups = [...this.selectedQuery.groups];
+    }
   }
 
   removeGrouping(index: number) {
-    this.groupings.splice(index, 1);
+    this.groups.splice(index, 1);
   }
 
   clearGroupings() {
-    this.groupings = [
-      { groupByColumn: '', aggregateFunction: '', aggregateColumn: '' },
-    ];
+    this.groups = [];
   }
 
   applyGroupings() {
-    console.log('Groupings DETAILS  :', this.groupings);
+    console.log('Groupings DETAILS  :', this.groups);
     debugger;
     this.GetGroupingData();
     this.closeGroupSummarizeOverlay();
@@ -648,13 +658,13 @@ export class DashboardComponent implements OnInit {
   GetGroupingData() {
     const groupingBody: any = { 
       tableName: this.selectedQuery?.selectedTable || "",
-      aggregations: this.groupings?.map(group => ({
+      aggregations: this.groups?.map(group => ({
         function: group.aggregateFunction, 
         column: group.aggregateColumn
       })) || []
     };
 
-    const groupByColumns = this.groupings?.map(group => group.groupByColumn).filter(col => col) || [];
+    const groupByColumns = this.groups?.map(group => group.groupByColumn).filter(col => col) || [];
     if (groupByColumns.length > 0) {
       groupingBody.groupByColumns = groupByColumns;
     }
@@ -927,8 +937,8 @@ export class DashboardComponent implements OnInit {
     }
 
     // Add GROUP BY and aggregation if present
-    if (this.groupings.some((g) => g.groupByColumn)) {
-      const groupColumns = this.groupings
+    if (this.groups.some((g) => g.groupByColumn)) {
+      const groupColumns = this.groups
         .filter((g) => g.groupByColumn)
         .map((g) => g.groupByColumn);
 

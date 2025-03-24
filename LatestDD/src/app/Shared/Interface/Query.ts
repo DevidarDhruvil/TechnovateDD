@@ -1,4 +1,5 @@
 import { Filter } from "./Filter";
+import { GroupingData } from "./Group";
 import { Join } from "./Join";
 
 export interface Query{
@@ -11,7 +12,7 @@ export interface Query{
   tableData: any[];
   filters: Filter[];
   joins: Join[];
-  
+  groups: GroupingData[];
 }
 
 

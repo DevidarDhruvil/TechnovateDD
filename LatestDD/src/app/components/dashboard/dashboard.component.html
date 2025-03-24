@@ -562,7 +562,7 @@
           <div class="gas-overlay-content">
             <h4>Group and Summarize</h4>
             <div
-              *ngFor="let group of groupings; let i = index"
+              *ngFor="let group of groups; let i = index"
               class="gas-grouping-container"
             >
               <label>Group By Column:</label>
@@ -595,7 +595,7 @@
               <button
                 class="gas-remove-btn"
                 (click)="removeGrouping(i)"
-                *ngIf="groupings.length > 1"
+                *ngIf="groups.length > 1"
               >
                 Remove
               </button>
