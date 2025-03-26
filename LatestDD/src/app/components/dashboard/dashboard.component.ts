@@ -18,16 +18,6 @@ import { GroupingData } from '../../Shared/Interface/Group';
 import { Chart } from '../../Shared/Interface/Charts';
 import { Dashboard } from '../../Shared/Interface/Dashboard';
 
-// interface Chart{
-//   id: number;
-//   name: string;
-// }
-
-// interface Dashboard{
-//   id: number;
-//   name: string;
-// }
-
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -247,6 +237,7 @@ export class DashboardComponent implements OnInit {
       id: this.queryCount,
       name: `Query ${this.queryCount}`,
       selectedTable: '',
+      selectedTableToAppend: '',
       selectedColumns: [],
       allColumns: [],
       columnList: [],
@@ -254,6 +245,7 @@ export class DashboardComponent implements OnInit {
       joins: [],
       filters: [],
       groups: [],
+      dropDuplicates: '',
     };
     this.queries.push(newQuery);
     this.openQuery(newQuery);
@@ -525,10 +517,35 @@ export class DashboardComponent implements OnInit {
 
   confirmAppendTable() {
     console.log('Append Table:', {
-      Table: this.selectedTableToAppend,
+      Table: this.selectedQuery!.selectedTableToAppend,
       DropDuplicates: this.dropDuplicates,
     });
+    this.GetAppendData();
     this.closeAppendTableOverlay();
+  }
+
+  GetAppendData() {
+    const requestBody = {
+      table1: this.selectedQuery?.selectedTable,
+      table2: this.selectedQuery!.selectedTableToAppend,
+      dropDuplicates: this.selectedQuery!.dropDuplicates === 'Yes', // Convert string to boolean
+    };
+
+    console.log('TableRequestBody', requestBody);
+    debugger;
+    const query = this.selectedQuery;
+
+    this.apiService.GetAppendTable(requestBody).subscribe(
+      (res: any) => {
+        query!.allColumns = Object.keys(res[0]);
+        this.selectedQuery!.tableData = res;
+        query!.selectedColumns = [...query!.allColumns];
+        console.log('API Response:', res);
+      },
+      (err) => {
+        console.error('API Error:', err);
+      }
+    );
   }
 
   closeAppendTableOverlay() {
@@ -701,28 +718,26 @@ export class DashboardComponent implements OnInit {
   GetGroupingData() {
     const groupingBody: any = {
       tableName: this.selectedQuery?.selectedTable || '',
-      aggregations:
-        this.groups?.map((group) => ({
-          function: group.aggregateFunction,
-          column: group.aggregateColumn,
-        })) || [],
-    };
+      aggregations:this.groups?.map((group) => ({
+        function: group.aggregateFunction,
+        column: group.aggregateColumn,})) || [],
+      };
 
-    const groupByColumns =
-      this.groups?.map((group) => group.groupByColumn).filter((col) => col) ||
-      [];
+    const groupByColumns =this.groups?.map((group) => group.groupByColumn).filter((col) => col) ||[];
     if (groupByColumns.length > 0) {
       groupingBody.groupByColumns = groupByColumns;
     }
 
-    console.log('Request Payload:', JSON.stringify(groupingBody, null, 2)); // Debugging
-
+    console.log('Grouping Request Payload:', JSON.stringify(groupingBody, null, 2)); // Debugging
+    const query = this.selectedQuery;
     this.apiService.GetGrouping(groupingBody).subscribe(
       (res: any) => {
         const groupedData = res as GroupingData[];
         console.log('Grouped Data:', groupedData);
-        this.selectedQuery!.tableData = res;
-        this.selectedQuery!.allColumns = Object.keys(res[0]);
+
+        query!.allColumns = Object.keys(res[0]);
+        query!.tableData = res;
+        query!.selectedColumns = [...query!.allColumns];
       },
       (error) => {
         console.error('Error fetching grouped data:', error);
@@ -775,6 +790,9 @@ export class DashboardComponent implements OnInit {
 
   editFilter() {
     this.showFilterRowsOverlay = true;
+  }
+  editgroupby() {
+    this.showGroupSummarizeOverlay = true;
   }
 
   toggleOverlay(event: Event) {
@@ -860,51 +878,54 @@ export class DashboardComponent implements OnInit {
     if (this.selectedQuery) {
       // Check if columns are selected
       if (this.selectedQuery.selectedColumns.length > 0) {
-        // Extract GROUP BY columns before using them in the mapping function
         const groupColumns = this.groups
           .filter((g) => g.groupByColumn)
           .map((g) => g.groupByColumn);
 
-        console.log('Group By Columns:', groupColumns);
-
-        // Extract Aggregation columns before using them
-        const aggregateColumns = this.groups
+        let aggregateColumns = this.groups
           .filter((g) => g.aggregateFunction && g.aggregateColumn)
           .map((g) => `${g.aggregateFunction}(${g.aggregateColumn})`);
 
-        console.log('Aggregate Columns:', aggregateColumns);
+        // Exclude specific aggregates from being added
+        aggregateColumns = aggregateColumns.filter(
+          (col) => !['COUNT_DistrictID'].includes(col)
+        );
 
-        sql += `SELECT ${this.selectedQuery.selectedColumns
-          .map((col) => {
-            // If column belongs to the main table and joins exist, prefix with table name
-            if (
-              this.selectedQuery?.columnList?.includes(col) &&
-              this.selectedQuery.joins.length > 0
-            ) {
-              return `${this.selectedQuery?.selectedTable}.${col}`;
-            }
-            // If column belongs to the main table and no joins exist, return column without prefix
-            else if (this.selectedQuery?.columnList?.includes(col)) {
-              return `${col}`;
-            }
-            // If the column belongs to a joined table, prefix it with the join table name
-            else if (
-              this.selectedQuery?.joins.some((j) => j.re.includes(col))
-            ) {
-              const matchingJoin = this.selectedQuery.joins.find((j) =>
-                j.re.includes(col)
-              );
-              return `${matchingJoin?.joinTable}.${col}`;
-            }
-            // If groups exist, add group and aggregate columns
-            else if (this.selectedQuery?.groups) {
-              return ` ${aggregateColumns.join(', ')}\n`;
-            }
-            return col; // Default return (shouldn't happen often)
-          })
-          .join(', ')} FROM ${this.selectedQuery.selectedTable}\n`;
+        // Map selected columns
+        let selectedColumns = this.selectedQuery.selectedColumns.map((col) => {
+          if (
+            this.selectedQuery?.columnList?.includes(col) &&
+            this.selectedQuery.joins.length > 0
+          ) {
+            return `${this.selectedQuery?.selectedTable}.${col}`;
+          } else if (this.selectedQuery?.columnList?.includes(col)) {
+            return `${col}`;
+          } else if (
+            this.selectedQuery?.joins.some((j) => j.re.includes(col))
+          ) {
+            const matchingJoin = this.selectedQuery.joins.find((j) =>
+              j.re.includes(col)
+            );
+            return `${matchingJoin?.joinTable}.${col}`;
+          }
+          return col;
+        });
+
+        // Ensure selectedColumns includes groupColumns
+        if (groupColumns.length > 0) {
+          selectedColumns = [...groupColumns, ...aggregateColumns];
+        }
+
+        // Construct the SQL query
+        sql += `SELECT ${selectedColumns.join(', ')} FROM ${
+          this.selectedQuery.selectedTable
+        }\n`;
+
+        // Add GROUP BY only if there are grouping columns
+        if (groupColumns.length > 0 && aggregateColumns.length > 0) {
+          sql += `GROUP BY ${groupColumns.join(', ')};\n`;
+        }
       } else {
-        // No columns selected, select all
         sql += `SELECT * FROM ${this.selectedQuery.selectedTable};\n`;
       }
 
@@ -1016,22 +1037,22 @@ export class DashboardComponent implements OnInit {
 
     // Add GROUP BY and aggregation if present
     // Add GROUP BY and aggregation if present
-    if (
-      this.groups.some((g) => g.groupByColumn) &&
-      this.groups.some((g) => g.aggregateColumn)
-    ) {
-      const groupColumns = this.groups
-        .filter((g) => g.groupByColumn)
-        .map((g) => g.groupByColumn);
-      const aggregateColumns = this.groups
-        .filter((g) => g.aggregateColumn)
-        .map((g) => g.aggregateColumn);
-      // sql += `${groupColumns.join(", ")}, ${aggregateColumns.join(", ")}\n`;
-      if (groupColumns.length > 0) {
-        debugger;
-        sql += `GROUP BY ${groupColumns.join(', ')}\n`;
-      }
-    }
+    // if (
+    //   this.groups.some((g) => g.groupByColumn) &&
+    //   this.groups.some((g) => g.aggregateColumn)
+    // ) {
+    //   const groupColumns = this.groups
+    //     .filter((g) => g.groupByColumn)
+    //     .map((g) => g.groupByColumn);
+    //   const aggregateColumns = this.groups
+    //     .filter((g) => g.aggregateColumn)
+    //     .map((g) => g.aggregateColumn);
+    //   // sql += `${groupColumns.join(", ")}, ${aggregateColumns.join(", ")}\n`;
+    //   if (aggregateColumns.length > 0) {
+    //     debugger;
+    //     sql += `GROUP BY ${groupColumns.join(', ')};\n `;
+    //   }
+    // }
     // if (this.groups.some((g) => g.groupByColumn))
     // {
     //   const groupColumns = this.groups

@@ -48,10 +48,8 @@
         </ul>
         <div id="chartsContainer">
           <div *ngFor="let chart of charts" class="queryItem">
-            <button
-              class="query-button"
-            >
-            <i class="fa-solid fa-chart-simple queryopIcons"></i>
+            <button class="query-button">
+              <i class="fa-solid fa-chart-simple queryopIcons"></i>
               {{ chart.name }}
             </button>
             <button class="delete-button" (click)="deleteChart(chart.id)">
@@ -72,13 +70,14 @@
         </ul>
         <div id="dashboardContainer">
           <div *ngFor="let dashboard of dashboards" class="queryItem">
-            <button
-              class="query-button"
-            >
-            <i class="fa-solid fa-square-poll-horizontal queryopIcons"></i>
+            <button class="query-button">
+              <i class="fa-solid fa-square-poll-horizontal queryopIcons"></i>
               {{ dashboard.name }}
             </button>
-            <button class="delete-button" (click)="deleteDashBoard(dashboard.id)">
+            <button
+              class="delete-button"
+              (click)="deleteDashBoard(dashboard.id)"
+            >
               <i class="fa-solid fa-xmark deleteopIcons"></i>
             </button>
           </div>
@@ -235,14 +234,19 @@
             </button>
           </div>
           <div class="sqlOverlay-body">
-            <div *ngIf="sqlHistoryData.length === 0">No saved queries found.</div>
-            <div *ngFor="let historyItem of sqlHistoryData" class="history-item">
-                <h4>{{ historyItem.query_name }}</h4>
-                <p><strong>Title:</strong> {{ historyItem.query_title }}</p>
-                <pre><code>{{ historyItem.query_text }}</code></pre>
-                <small>{{ historyItem.created_at | date : "medium" }}</small>
+            <div *ngIf="sqlHistoryData.length === 0">
+              No saved queries found.
             </div>
-        </div>        
+            <div
+              *ngFor="let historyItem of sqlHistoryData"
+              class="history-item"
+            >
+              <h4>{{ historyItem.query_name }}</h4>
+              <p><strong>Title:</strong> {{ historyItem.query_title }}</p>
+              <pre><code>{{ historyItem.query_text }}</code></pre>
+              <small>{{ historyItem.created_at | date : "medium" }}</small>
+            </div>
+          </div>
         </div>
       </div>
       <div class="detail-box">
@@ -385,10 +389,8 @@
               <label>Join On:</label>
               <div class="join-condition">
                 <!-- Left (Source) Column -->
-                <select [(ngModel)]="selectedJoin!.sourceColumn" 
-
-                >
-                <option value="" hidden>Select Left Column</option>
+                <select [(ngModel)]="selectedJoin!.sourceColumn">
+                  <option value="" hidden>Select Left Column</option>
                   <option
                     *ngFor="let col of selectedQuery?.columnList || []"
                     [value]="col"
@@ -401,9 +403,7 @@
 
                 <!-- Right (Target) Column -->
                 <select [(ngModel)]="selectedJoin!.targetColumn">
-                  <option value="" hidden>
-                    Select Right Column
-                  </option>
+                  <option value="" hidden>Select Right Column</option>
                   <option
                     *ngFor="let col of selectedJoin!.rightColumns || []"
                     [value]="col"
@@ -435,13 +435,17 @@
           <div class="append-table-overlay-content">
             <h4>Append Table</h4>
             <label>Select Table to Append:</label>
-            <select [(ngModel)]="selectedTableToAppend">
-              <option *ngFor="let table of tables" [value]="table">
+            <select [(ngModel)]="selectedQuery!.selectedTableToAppend">
+              <option
+                *ngFor="let table of tables"
+                [value]="table"
+                [disabled]="table === selectedQuery?.selectedTable"
+              >
                 {{ table }}
               </option>
             </select>
             <label>Drop Duplicates?</label>
-            <select [(ngModel)]="dropDuplicates">
+            <select [(ngModel)]="selectedQuery!.dropDuplicates">
               <option value="Yes">Yes</option>
               <option value="No">No</option>
             </select>
@@ -586,45 +590,49 @@
           <div class="gas-overlay-content">
             <h4>Group and Summarize</h4>
             <div class="gas-grouping-container-scrollbar">
-            <div
-              *ngFor="let group of groups; let i = index"
-              class="gas-grouping-container">
-              <label>Group By Column:</label>
-              <select [(ngModel)]="group.groupByColumn">
-                <option value="" disabled selected>Select a column</option>
-                <option
-                  *ngFor="let column of selectedQuery?.columnList"
-                  [value]="column"
-                >
-                  {{ column }}
-                </option>
-              </select>
-              <label>Aggregate Function:</label>
-              <select [(ngModel)]="group.aggregateFunction">
-                <option value="" disabled selected>Select a function</option>
-                <option *ngFor="let func of aggregateFunctions" [value]="func">
-                  {{ func }}
-                </option>
-              </select>
-              <label>Column to Apply Aggregation On:</label>
-              <select [(ngModel)]="group.aggregateColumn">
-                <option value="" disabled selected>Select a column</option>
-                <option
-                  *ngFor="let column of selectedQuery?.columnList"
-                  [value]="column"
-                >
-                  {{ column }}
-                </option>
-              </select>
-              <button
-                class="gas-remove-btn"
-                (click)="removeGrouping(i)"
-                *ngIf="groups.length > 1"
+              <div
+                *ngFor="let group of groups; let i = index"
+                class="gas-grouping-container"
               >
-                Remove
-              </button>
+                <label>Group By Column:</label>
+                <select [(ngModel)]="group.groupByColumn">
+                  <option value="" disabled selected>Select a column</option>
+                  <option
+                    *ngFor="let column of selectedQuery?.columnList"
+                    [value]="column"
+                  >
+                    {{ column }}
+                  </option>
+                </select>
+                <label>Aggregate Function:</label>
+                <select [(ngModel)]="group.aggregateFunction">
+                  <option value="" disabled selected>Select a function</option>
+                  <option
+                    *ngFor="let func of aggregateFunctions"
+                    [value]="func"
+                  >
+                    {{ func }}
+                  </option>
+                </select>
+                <label>Column to Apply Aggregation On:</label>
+                <select [(ngModel)]="group.aggregateColumn">
+                  <option value="" disabled selected>Select a column</option>
+                  <option
+                    *ngFor="let column of selectedQuery?.columnList"
+                    [value]="column"
+                  >
+                    {{ column }}
+                  </option>
+                </select>
+                <button
+                  class="gas-remove-btn"
+                  (click)="removeGrouping(i)"
+                  *ngIf="groups.length > 1"
+                >
+                  Remove
+                </button>
+              </div>
             </div>
-          </div>
             <button class="gas-add-btn" (click)="addGrouping()">
               Add Grouping
             </button>
@@ -636,78 +644,98 @@
           </div>
         </div>
 
-
         <!-- SELECTED INFO -->
         <div class="selected-query-container">
-
-          <div *ngIf="selectedQuery?.selectedTable" >
+          <div *ngIf="selectedQuery?.selectedTable">
             <div class="selected-table">
-                <i class="fa-solid fa-database opIcons"></i>
-                <span>Select</span>
+              <i class="fa-solid fa-database opIcons"></i>
+              <span>Select</span>
             </div>
             <div class="selected-table-container">
               <span (click)="editTable()" class="highlightValues">{{
                 selectedQuery?.selectedTable
-                }}</span>
-            </div> 
+              }}</span>
+            </div>
           </div>
-
 
           <div
             *ngIf="selectedQuery && selectedQuery.selectedColumns.length > 0"
-              class="selected-column-main"
-            >
+            class="selected-column-main"
+          >
             <div class="selected-column">
               <i class="fa-solid fa-table-columns opIcons"></i>
               <span>Selected</span>
             </div>
-            <div class="selected-column-container">  
+            <div class="selected-column-container">
               <span (click)="editColumn()" class="highlightValues"
                 >{{ selectedQuery.selectedColumns.length }} Columns</span
               >
             </div>
           </div>
 
-
-          <div *ngIf="selectedQuery && selectedQuery.joins.length > 0" class="selected-join-main">
+          <div
+            *ngIf="selectedQuery && selectedQuery.joins.length > 0"
+            class="selected-join-main"
+          >
             <div>
-              <div class="selected-join" style="padding-top: 0;">
+              <div class="selected-join" style="padding-top: 0px">
                 <i class="fa-solid fa-circle-half-stroke opIcons"></i>
-                <span (click)="editJoin(joinIndex)" class="highlightValues" id="selected-join-container">
+                <span
+                  (click)="editJoin(joinIndex)"
+                  class="highlightValues"
+                  id="selected-join-container"
+                >
                   {{
-                      selectedQuery.joins[joinIndex].joinType ||
+                    selectedQuery.joins[joinIndex].joinType ||
                       "Select Join Type"
                   }}
                 </span>
                 join
-                <span (click)="editJoin(joinIndex)" class="highlightValues" id="selected-join-container">
+                <span
+                  (click)="editJoin(joinIndex)"
+                  class="highlightValues"
+                  id="selected-join-container"
+                >
                   {{
-                      selectedQuery.joins[joinIndex].joinTable ||
-                        "Select Join Table"
+                    selectedQuery.joins[joinIndex].joinTable ||
+                      "Select Join Table"
                   }}
                 </span>
               </div>
             </div>
           </div>
 
+          <div *ngIf="filters.length > 0">
+            <div class="selected-filter" style="padding-top: 0px">
+              <i class="fa-solid fa-filter opIcons"></i>
+              <span>Filter</span>
+            </div>
+            <div class="selected-filter-container">
+              <span
+                (click)="editFilter()"
+                *ngFor="let filter of filters; let i = index"
+                class="highlightValues"
+              >
+                {{ filter.column }}
+              </span>
+            </div>
+          </div>
 
-            <div *ngIf="filters.length > 0">
-              <div class="selected-filter" style="padding-top: 0;">
-                <i class="fa-solid fa-filter opIcons"></i>
-                <span>Filter</span>
+          <!-- <div *ngIf="groups.length > 0">
+              <div class="selected-groupby" style="padding-top: 0px;" >
+                <i class="fa-solid fa-object-group opIcons" ></i>
+                <span>GroupBy</span>
               </div>
-              <div class="selected-filter-container">
+              <div class="selected-groupby-container">
                 <span
-                  (click)="editFilter()"
-                  *ngFor="let filter of filters; let i = index"
+                  (click)="editgroupby()"1
+                  *ngFor="let group of groups; let i = index"
                   class="highlightValues"
                 >
-                  {{ filter.column }}
+                  {{ group.groupByColumn }}
                 </span>
               </div> 
-            </div>
-
-
+            </div> -->
         </div>
       </div>
     </div>

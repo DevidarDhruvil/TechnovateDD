@@ -6,6 +6,7 @@ export interface Query{
   id: number;
   name: string;
   selectedTable: string;
+  selectedTableToAppend:string;
   selectedColumns: string[];
   allColumns: string[];
   columnList: string[];
@@ -13,6 +14,7 @@ export interface Query{
   filters: Filter[];
   joins: Join[];
   groups: GroupingData[];
+  dropDuplicates:string;
 }
 
 
