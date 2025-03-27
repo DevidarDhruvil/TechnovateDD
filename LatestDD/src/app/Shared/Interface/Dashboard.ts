@@ -1,4 +1,4 @@
 export interface Dashboard{
-    id: number;
-    name: string;
-  }
+  id: number;
+  name: string;
+}

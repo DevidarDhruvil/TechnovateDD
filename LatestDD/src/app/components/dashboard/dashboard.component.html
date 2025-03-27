@@ -721,21 +721,37 @@
             </div>
           </div>
 
-          <!-- <div *ngIf="groups.length > 0">
-              <div class="selected-groupby" style="padding-top: 0px;" >
-                <i class="fa-solid fa-object-group opIcons" ></i>
-                <span>GroupBy</span>
-              </div>
-              <div class="selected-groupby-container">
-                <span
-                  (click)="editgroupby()"1
-                  *ngFor="let group of groups; let i = index"
-                  class="highlightValues"
-                >
-                  {{ group.groupByColumn }}
-                </span>
-              </div> 
-            </div> -->
+          <div *ngIf="groups.length > 0">
+            <div class="selected-groupby" style="padding-top: 0px">
+              <i class="fa-solid fa-object-group opIcons"></i>
+              <span>GroupBy</span>
+            </div>
+            <div class="selected-groupby-container">
+              <span
+                (click)="editgroupby()"
+                *ngFor="let group of groups; let i = index"
+                class="highlightValues"
+              >
+                {{ group.groupByColumn }}
+              </span>
+            </div>
+          </div>
+
+          <div *ngIf="selectedQuery?.selectedTableToAppend">
+            <div class="selected-append" >
+              <i class="fa-solid fa-layer-group opIcons"></i>
+              <span>Filter</span>
+            </div>
+            <div class="selected-append-container">
+              <span
+                (click)="editappendtable()"
+                class="highlightValues"
+              >
+                {{ selectedQuery?.selectedTableToAppend }}
+              </span>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
