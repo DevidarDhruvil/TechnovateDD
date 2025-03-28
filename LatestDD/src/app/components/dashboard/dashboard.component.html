@@ -678,18 +678,7 @@
               <span>Selected</span>
             </div>
             <div class="selected-column-container">
-              <span
-                (click)="editColumn()"
-                #columnSpan
-                (mouseenter)="
-                  showTooltip(
-                    columnSpan,
-                    selectedQuery.selectedColumns.length + ' Columns'
-                  )
-                "
-                (mouseleave)="hideTooltip()"
-                class="highlightValues"
-              >
+              <span (click)="editColumn()" class="highlightValues">
                 {{ selectedQuery.selectedColumns.length }} Columns
               </span>
             </div>
