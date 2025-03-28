@@ -1,5 +1,5 @@
 export interface Filter{
-    column: string;
+  column: string;
   operation: string;
   value: string | number;
   valueStart: string;
@@ -10,7 +10,7 @@ export interface Filter{
 }
 
 export interface FilterColumn{
-    name: string;
+  name: string;
   type: 'string' | 'DateTime' | 'integer' | 'decimal';
   values: string[] | number[];
 }

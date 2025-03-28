@@ -1,8 +1,8 @@
 export interface SqlHistoryItem{
-    id?: number; // Optional, depending on backend response
+  id?: number; //optional
   sqlQuery: string;
   queryName: string;
   queryTitle: string;
   userId: number;
-  createdAt?: string; // Optional, depending on backend response
+  createdAt?: string; // Optional
 }

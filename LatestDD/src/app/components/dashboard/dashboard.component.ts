@@ -1,10 +1,15 @@
 import { CommonModule } from '@angular/common';
 import {
+  ChangeDetectorRef,
   Component,
   ElementRef,
   HostListener,
+  NgZone,
   OnInit,
+  QueryList,
+  Renderer2,
   ViewChild,
+  ViewChildren,
   inject,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -14,6 +19,9 @@ import { Query } from '../../Shared/Interface/Query';
 import { Join } from '../../Shared/Interface/Join';
 import { Filter, FilterColumn } from '../../Shared/Interface/Filter';
 import { SqlHistoryItem } from '../../Shared/Interface/SqlHistoryItem';
+import { GroupingData } from '../../Shared/Interface/Group';
+import { Chart } from '../../Shared/Interface/Charts';
+import { Dashboard } from '../../Shared/Interface/Dashboard';
 
 @Component({
   selector: 'app-root',
@@ -26,6 +34,13 @@ export class DashboardComponent implements OnInit {
   title = 'DynamicDashboard';
   queries: Query[] = [];
   queryCount = 0;
+
+  charts: Chart[] = [];
+  chartCount = 0;
+
+  dashboards: Dashboard[] = [];
+  dashboardCount = 0;
+
   selectedQuery: Query | null = null;
   queryTitle = '';
   tables: string[] = [];
@@ -118,14 +133,7 @@ export class DashboardComponent implements OnInit {
       'between',
     ],
   };
-  aggregateFunctions = [
-    'Count of',
-    'Sum of',
-    'Average of',
-    'Minimum of',
-    'Maximum of',
-    'Unique count of',
-  ];
+  aggregateFunctions = ['SUM', 'COUNT', 'MAX', 'MIN'];
 
   // Temporary state for overlays
   newColumnExpression = '';
@@ -136,25 +144,27 @@ export class DashboardComponent implements OnInit {
   customExpression = '';
   filters: Filter[] = [];
   joins: Join[] = [];
+  groups: GroupingData[] = [];
+
+  //ToolTip
+  tooltipVisible = false;
+  tooltipText = '';
+  tooltipStyles = {};
 
   selectedJoin: Join | null = null;
   joinIndex: number = 0;
-
-  groupings = [
-    { groupByColumn: '', aggregateFunction: '', aggregateColumn: '' },
-  ];
 
   ngOnInit(): void {
     this.getTableNames();
   }
 
-  sortColumn: string = '';
-  sortDirection: 'asc' | 'desc' = 'asc';
-
   tabledata: any[] = [];
   columns: string[] = [];
   selectedColumns: string[] = [];
 
+  //Sorting logic
+  sortColumn: string = '';
+  sortDirection: 'asc' | 'desc' = 'asc';
   sortTable(column: string) {
     // Toggle sort direction when clicking the same column, else set it to 'asc' for a new column.
     if (this.sortColumn === column) {
@@ -224,25 +234,29 @@ export class DashboardComponent implements OnInit {
     // After sorting, update the table data
     this.selectedQuery!.tableData = tableData;
   }
-
+  //fetch the list of table
   getTableNames() {
     this.apiService.GetTableApi([]).subscribe((res: any) => {
       this.tables = res;
     });
   }
 
+  //Query details such add,remove,update.
   addQueries() {
     this.queryCount++;
     const newQuery: Query = {
       id: this.queryCount,
       name: `Query ${this.queryCount}`,
       selectedTable: '',
+      selectedTableToAppend: '',
       selectedColumns: [],
       allColumns: [],
       columnList: [],
       tableData: [],
       joins: [],
       filters: [],
+      groups: [],
+      dropDuplicates: '',
     };
     this.queries.push(newQuery);
     this.openQuery(newQuery);
@@ -253,6 +267,7 @@ export class DashboardComponent implements OnInit {
     this.queryTitle = query.name;
     this.filters = query.filters;
     this.joins = query.joins ?? [];
+    this.groups = query.groups;
 
     if (query.selectedTable) {
       if (query.joins && query.tableData.length === 0) {
@@ -277,6 +292,7 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  //fetch column,datatype,tabledata when table is selected.
   selectTable(table: string) {
     if (this.selectedQuery) {
       this.selectedQuery.selectedTable = table;
@@ -291,6 +307,7 @@ export class DashboardComponent implements OnInit {
     this.closeTableOverlay();
   }
 
+  //fetch Column name
   fetchColumnNames(table: string) {
     debugger;
     this.apiService.GetColumnApi(table).subscribe((res: any) => {
@@ -311,12 +328,13 @@ export class DashboardComponent implements OnInit {
       }
       const columnList: any = [...res]; // Define columnList as a separate variable
       this.selectedJoin.sourceColumns = [columnList];
-      console.log(this.selectedJoin.sourceColumns);
+      // console.log(this.selectedJoin.sourceColumns);
     });
   }
 
   dataType: Record<string, string> = {};
 
+  //fetch the datatype of Column.
   fetchDataTypeData(table: string) {
     this.apiService.GetDataTypeData(table).subscribe((res: any) => {
       this.dataType = res;
@@ -324,6 +342,7 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  //fetch the distict Column values.
   fetchDistinctColValues(index: number, columnName: string, tableName: string) {
     this.apiService
       .GetDistinctColValues(tableName, columnName)
@@ -332,21 +351,25 @@ export class DashboardComponent implements OnInit {
       });
   }
 
+  //fetch the filter values
   fetchFilterData(filterDetails: any) {
     if (this.selectedQuery && this.selectedQuery.selectedTable) {
       const query = this.selectedQuery;
-      this.apiService.GetFilterData(filterDetails).subscribe((res: any) => {
-        if (res.length === 0) {
-          query.tableData = [];
-        } else {
-          query.allColumns = Object.keys(res[0]);
-          query.tableData = res;
-          // query.selectedColumns = [...query.allColumns];
-        }
-      });
+      this.apiService
+        .GetExecuteJoinFilter(filterDetails)
+        .subscribe((res: any) => {
+          if (res.length === 0) {
+            query.tableData = [];
+          } else {
+            query.allColumns = Object.keys(res[0]);
+            query.tableData = res;
+            // query.selectedColumns = [...query.allColumns];
+          }
+        });
     }
   }
 
+  //fetch the table data.
   fetchTableData() {
     if (this.selectedQuery && this.selectedQuery.selectedTable) {
       const query = this.selectedQuery;
@@ -357,6 +380,7 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  // Column checkbox selection.
   toggleColumnSelection(column: string, event: Event) {
     const isChecked = (event.target as HTMLInputElement).checked;
     if (this.selectedQuery) {
@@ -384,6 +408,7 @@ export class DashboardComponent implements OnInit {
   //   }
   // }
 
+  //fetch the Right table for join
   RightTable(table: string, joinIndex: number) {
     console.log('Current joins array:', this.selectedQuery?.joins);
     console.log('Trying to access index:', joinIndex);
@@ -442,6 +467,7 @@ export class DashboardComponent implements OnInit {
     this.fetchRightColumnNames(table, joinIndex);
   }
 
+  //fetch right Column name for join
   fetchRightColumnNames(table: string, joinIndex: number) {
     debugger;
     this.apiService.GetColumnApi(table).subscribe((res: any) => {
@@ -454,6 +480,7 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  // join functionality added to confirm.
   confirmJoinTable() {
     if (
       this.selectedQuery &&
@@ -468,6 +495,7 @@ export class DashboardComponent implements OnInit {
     this.showJoinTableOverlay = false;
   }
 
+  //fetch the join data
   fetchJoinData() {
     if (this.selectedQuery && this.selectedQuery.selectedTable) {
       const requestBody = {
@@ -475,19 +503,21 @@ export class DashboardComponent implements OnInit {
         joins: this.selectedQuery.joins,
       };
 
-      this.apiService.GetJoinTableData(requestBody).subscribe((res: any) => {
-        if (res.length === 0) {
-          // query.tableData = [];
-          // query.selectedColumns = [];
-          this.selectedQuery!.tableData = [];
-          this.selectedQuery!.selectedColumns = [];
-        } else {
-          // query.allColumns = Object.keys(res[0]);
-          // query.tableData = res;
-          this.selectedQuery!.allColumns = Object.keys(res[0]);
-          this.selectedQuery!.tableData = res;
-        }
-      });
+      this.apiService
+        .GetExecuteJoinFilter(requestBody)
+        .subscribe((res: any) => {
+          if (res.length === 0) {
+            // query.tableData = [];
+            // query.selectedColumns = [];
+            this.selectedQuery!.tableData = [];
+            this.selectedQuery!.selectedColumns = [];
+          } else {
+            // query.allColumns = Object.keys(res[0]);
+            // query.tableData = res;
+            this.selectedQuery!.allColumns = Object.keys(res[0]);
+            this.selectedQuery!.tableData = res;
+          }
+        });
     }
   }
 
@@ -507,12 +537,39 @@ export class DashboardComponent implements OnInit {
     this.newColumnType = '';
   }
 
+  //AppendTable functionality added to confirm.
   confirmAppendTable() {
     console.log('Append Table:', {
-      Table: this.selectedTableToAppend,
+      Table: this.selectedQuery!.selectedTableToAppend,
       DropDuplicates: this.dropDuplicates,
     });
+    this.GetAppendData();
     this.closeAppendTableOverlay();
+  }
+
+  //fetch the Append Table
+  GetAppendData() {
+    const requestBody = {
+      table1: this.selectedQuery?.selectedTable,
+      table2: this.selectedQuery!.selectedTableToAppend,
+      dropDuplicates: this.selectedQuery!.dropDuplicates === 'Yes', // Convert string to boolean
+    };
+
+    console.log('TableRequestBody', requestBody);
+    debugger;
+    const query = this.selectedQuery;
+
+    this.apiService.GetAppendTable(requestBody).subscribe(
+      (res: any) => {
+        query!.allColumns = Object.keys(res[0]);
+        this.selectedQuery!.tableData = res;
+        query!.selectedColumns = [...query!.allColumns];
+        console.log('API Response:', res);
+      },
+      (err) => {
+        console.error('API Error:', err);
+      }
+    );
   }
 
   closeAppendTableOverlay() {
@@ -531,6 +588,53 @@ export class DashboardComponent implements OnInit {
     this.customExpression = '';
   }
 
+  // apply filter funtionality
+  applyFilters() {
+    if (!this.selectedQuery?.selectedTable) {
+      alert('Please select a table first.');
+      return;
+    }
+
+    const filters = this.filters
+      .filter(
+        (filter) =>
+          filter.column &&
+          filter.operation &&
+          (filter.operation !== 'between' ||
+            (filter.valueStart && filter.valueEnd))
+      )
+      .map((filter, index) => {
+        const filterObject: any = {
+          columnName: filter.column,
+          condition: filter.operation,
+          value:
+            filter.operation === 'between'
+              ? [filter.valueStart, filter.valueEnd] // For 'between' operation, use a range
+              : filter.value.toString(), // Convert value to string for consistency
+        };
+
+        // Add logicalOperator only if there’s more than one filter
+        if (this.filters.length > 1 && index !== this.filters.length - 1) {
+          filterObject.logicalOperator = filter.condition; // AND/OR
+        }
+
+        return filterObject;
+      });
+
+    // filter response body
+    const requestBody = {
+      tableName: this.selectedQuery.selectedTable,
+      joins: this.selectedQuery.joins,
+      filters: filters,
+    };
+    console.log('filterConditions:', requestBody);
+
+    //call the Filter Api
+    this.fetchFilterData(requestBody);
+    this.closeFilterRowsOverlay();
+  }
+
+  //Add filter functionality
   addFilter() {
     if (this.selectedQuery) {
       this.selectedQuery.filters = [
@@ -547,19 +651,19 @@ export class DashboardComponent implements OnInit {
         },
       ];
 
-      // ✅ Ensure Angular detects the change
       this.filters = [...this.selectedQuery.filters];
     }
   }
 
+  //Remove filter functionality
   removeFilter(index: number) {
     if (this.selectedQuery) {
       this.selectedQuery.filters.splice(index, 1);
-      // ✅ Ensure the UI updates
       this.filters = [...this.selectedQuery.filters];
     }
   }
 
+  //Filter Update Operation
   updateOperations(index: number) {
     const selectedColumn = this.filters[index].column;
     const columnType = this.dataType[selectedColumn]; // Get data type from dataType object
@@ -581,6 +685,7 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  // Filter Update Values.
   updateValues(index: number) {
     const selectedColumn = this.filterColumns.find(
       (col) => col.name === this.filters[index].column
@@ -590,6 +695,7 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  // Clear Filter functionality
   clearFilters() {
     if (this.selectedQuery) {
       this.selectedQuery.filters = [];
@@ -598,116 +704,138 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  applyFilters() {
-    if (!this.selectedQuery?.selectedTable) {
-      alert('Please select a table first.');
-      return;
-    }
-
-    const filters = this.filters
-      .filter(
-        (filter) =>
-          filter.column &&
-          filter.operation &&
-          (filter.operation !== 'between' ||
-            (filter.valueStart && filter.valueEnd))
-      ) // Ensure valid filters
-      .map((filter, index) => {
-        const filterObject: any = {
-          columnName: filter.column,
-          condition: filter.operation,
-          value:
-            filter.operation === 'between'
-              ? [filter.valueStart, filter.valueEnd] // For 'between' operation, use a range
-              : filter.value.toString(), // Convert value to string for consistency
-        };
-
-        // Add logicalOperator only if there’s more than one filter
-        if (this.filters.length > 1 && index !== this.filters.length - 1) {
-          filterObject.logicalOperator = filter.condition; // AND/OR
-        }
-
-        return filterObject;
-      });
-
-    const requestBody = {
-      tableName: this.selectedQuery.selectedTable,
-      joins: this.selectedQuery.joins,
-      filters: filters,
-    };
-
-    console.log('filterConditions:', requestBody);
-
-    this.fetchFilterData(requestBody);
-    this.closeFilterRowsOverlay();
-  }
-
   closeFilterRowsOverlay() {
     this.showFilterRowsOverlay = false;
   }
 
+  //GroupBy functionality added to add Group btn
   addGrouping() {
-    this.groupings.push({
-      groupByColumn: '',
-      aggregateFunction: '',
-      aggregateColumn: '',
-    });
+    if (this.selectedQuery) {
+      this.selectedQuery.groups = [
+        ...this.selectedQuery.groups,
+        {
+          groupByColumn: '',
+          aggregateFunction: '',
+          aggregateColumn: '',
+        },
+      ];
+
+      this.groups = [...this.selectedQuery.groups];
+    }
   }
 
+  //Remove Grouping functionality
   removeGrouping(index: number) {
-    this.groupings.splice(index, 1);
+    this.groups.splice(index, 1);
   }
 
+  // Clear Grouping functionality
   clearGroupings() {
-    this.groupings = [
-      { groupByColumn: '', aggregateFunction: '', aggregateColumn: '' },
-    ];
+    this.groups = [];
   }
 
+  // Apply Grouping functionality added to Apply GroupBy btn
   applyGroupings() {
-    console.log('Groupings:', this.groupings);
+    console.log('Groupings DETAILS  :', this.groups);
+    debugger;
+    this.GetGroupingData();
     this.closeGroupSummarizeOverlay();
+  }
+
+  // fetch the Grouping Data
+  GetGroupingData() {
+    const groupingBody: any = {
+      tableName: this.selectedQuery?.selectedTable || '',
+      aggregations:
+        this.groups?.map((group) => ({
+          function: group.aggregateFunction,
+          column: group.aggregateColumn,
+        })) || [],
+    };
+
+    const groupByColumns =
+      this.groups?.map((group) => group.groupByColumn).filter((col) => col) ||
+      [];
+    if (groupByColumns.length > 0) {
+      groupingBody.groupByColumns = groupByColumns;
+    }
+
+    console.log(
+      'Grouping Request Payload:',
+      JSON.stringify(groupingBody, null, 2)
+    );
+
+    const query = this.selectedQuery;
+    this.apiService.GetGrouping(groupingBody).subscribe(
+      (res: any) => {
+        const groupedData = res as GroupingData[];
+        console.log('Grouped Data:', groupedData);
+
+        query!.allColumns = Object.keys(res[0]);
+        query!.tableData = res;
+        query!.selectedColumns = [...query!.allColumns];
+      },
+      (error) => {
+        console.error('Error fetching grouped data:', error);
+      }
+    );
   }
 
   closeGroupSummarizeOverlay() {
     this.showGroupSummarizeOverlay = false;
   }
 
+  // Chart implementation
   addCharts() {
-    const chartsContainer = document.getElementById('chartsContainer');
-    if (chartsContainer) {
-      const chartDiv = document.createElement('div');
-      chartDiv.textContent = `Chart ${chartsContainer.children.length + 1}`;
-      chartsContainer.appendChild(chartDiv);
-    }
+    this.chartCount++;
+    const newChart: Chart = {
+      id: this.chartCount,
+      name: `Chart ${this.chartCount}`,
+    };
+    this.charts.push(newChart);
   }
 
+  deleteChart(chartId: number) {
+    this.charts = this.charts.filter((q) => q.id !== chartId);
+  }
+
+  // Dashboard Implementation
   addDashboard() {
-    const dashboardContainer = document.getElementById('dashboardContainer');
-    if (dashboardContainer) {
-      const dashboardDiv = document.createElement('div');
-      dashboardDiv.textContent = `Dashboard ${
-        dashboardContainer.children.length + 1
-      }`;
-      dashboardContainer.appendChild(dashboardDiv);
-    }
+    this.dashboardCount++;
+    const newDashboard: Dashboard = {
+      id: this.dashboardCount,
+      name: `Dashboard ${this.dashboardCount}`,
+    };
+    this.dashboards.push(newDashboard);
   }
 
+  deleteDashBoard(dashboardId: number) {
+    this.dashboards = this.dashboards.filter((q) => q.id !== dashboardId);
+  }
+
+  //Edit Operation Table
   editTable() {
     this.showTableOverlay = true;
   }
-
+  //Edit Operation Column
   editColumn() {
     this.showColumnOverlay = true;
   }
-
+  //Edit Operation Join
   editJoin(joinIndex: number) {
     this.selectedJoin = this.selectedQuery?.joins[joinIndex] || null;
     this.showJoinTableOverlay = true;
   }
-
+  //Edit Operation Filter
   editFilter() {
     this.showFilterRowsOverlay = true;
+  }
+  //Edit Operation GroupBy
+  editgroupby() {
+    this.showGroupSummarizeOverlay = true;
+  }
+  editappendtable() {
+    this.showAppendTableOverlay = true;
   }
 
   toggleOverlay(event: Event) {
@@ -765,6 +893,7 @@ export class DashboardComponent implements OnInit {
     this.showJoinTableOverlay = false;
   }
 
+  //Sql Query Functionality
   hasOperations: boolean = false;
   sqlTemplate: string = '';
   viewSql() {
@@ -793,34 +922,76 @@ export class DashboardComponent implements OnInit {
     if (this.selectedQuery) {
       // Check if columns are selected
       if (this.selectedQuery.selectedColumns.length > 0) {
-        sql += `SELECT ${this.selectedQuery.selectedColumns
-          .map((col) => {
-            // If column belongs to the main table and joins exist, prefix with table name
-            if (
-              this.selectedQuery?.columnList?.includes(col) &&
-              this.selectedQuery.joins.length > 0
-            ) {
-              return `${this.selectedQuery?.selectedTable}.${col}`;
-            }
-            // If column belongs to the main table and no joins exist, return column without prefix
-            else if (this.selectedQuery?.columnList?.includes(col)) {
-              return `${col}`;
-            }
-            // If the column belongs to a joined table, prefix it with the join table name
-            else if (
-              this.selectedQuery?.joins.some((j) => j.re.includes(col))
-            ) {
-              const matchingJoin = this.selectedQuery.joins.find((j) =>
-                j.re.includes(col)
-              );
-              return `${matchingJoin?.joinTable}.${col}`;
-            }
-            return col; // Default return (shouldn't happen often)
-          })
-          .join(', ')} FROM ${this.selectedQuery.selectedTable}\n`;
+        const groupColumns = this.groups
+          .filter((g) => g.groupByColumn)
+          .map((g) => g.groupByColumn);
+
+        let aggregateColumns = this.groups
+          .filter((g) => g.aggregateFunction && g.aggregateColumn)
+          .map((g) => `${g.aggregateFunction}(${g.aggregateColumn})`);
+
+        // Map selected columns
+        let selectedColumns = this.selectedQuery.selectedColumns.map((col) => {
+          if (
+            this.selectedQuery?.columnList?.includes(col) &&
+            this.selectedQuery.joins.length > 0
+          ) {
+            return `${this.selectedQuery?.selectedTable}.${col}`;
+          } else if (this.selectedQuery?.columnList?.includes(col)) {
+            return `${col}`;
+          } else if (
+            this.selectedQuery?.joins.some((j) => j.re.includes(col))
+          ) {
+            const matchingJoin = this.selectedQuery.joins.find((j) =>
+              j.re.includes(col)
+            );
+            return `${matchingJoin?.joinTable}.${col}`;
+          }
+          return col;
+        });
+
+        // Construct the SQL Query
+        sql += `SELECT ${selectedColumns.join(', ')} FROM ${
+          this.selectedQuery!.selectedTable
+        }`;
+
+        if (this.selectedQuery!.selectedTableToAppend) {
+          if (this.selectedQuery!.dropDuplicates === 'Yes') {
+            sql += `\nUNION\nSELECT ${selectedColumns.join(', ')} FROM ${
+              this.selectedQuery!.selectedTableToAppend
+            }`;
+          } else {
+            sql += `\nUNION ALL\nSELECT ${selectedColumns.join(', ')} FROM ${
+              this.selectedQuery!.selectedTableToAppend
+            }`;
+          }
+        }
+
+        if (groupColumns.length > 0 && aggregateColumns.length > 0) {
+          sql += `\nGROUP BY ${groupColumns.join(', ')};\n`;
+        } else if (groupColumns.length > 0 && aggregateColumns.length == 0) {
+          sql += `\nSELECT * FROM ${
+            this.selectedQuery.selectedTable
+          } GROUP BY ${groupColumns.join(', ')};`;
+        }
       } else {
-        // No columns selected, select all
-        sql += `SELECT * FROM ${this.selectedQuery.selectedTable};\n`;
+        // If no columns are selected, handle UNION case or GROUP BY without selected columns
+        if (this.selectedQuery!.selectedTableToAppend) {
+          sql += `SELECT * FROM ${
+            this.selectedQuery.selectedTable
+          } \nUNION \nSELECT * FROM ${
+            this.selectedQuery!.selectedTableToAppend
+          };`;
+        } else if (this.groups.some((g) => g.groupByColumn)) {
+          const groupColumns = this.groups
+            .filter((g) => g.groupByColumn)
+            .map((g) => g.groupByColumn);
+          sql += `SELECT * FROM ${
+            this.selectedQuery.selectedTable
+          } GROUP BY ${groupColumns.join(', ')};`;
+        } else {
+          sql += `SELECT * FROM ${this.selectedQuery.selectedTable};`;
+        }
       }
 
       // Add JOIN if present
@@ -833,7 +1004,7 @@ export class DashboardComponent implements OnInit {
             join.joinType.length >= 1
           ) {
             const joinType = join.joinType.toUpperCase();
-            sql += `${joinType} JOIN ${join.joinTable} ON ${this.selectedQuery?.selectedTable}.${join.sourceColumn} = ${join.joinTable}.${join.targetColumn}\n`;
+            sql += `${joinType} JOIN ${join.joinTable}\nON ${this.selectedQuery?.selectedTable}.${join.sourceColumn} = ${join.joinTable}.${join.targetColumn}\n `;
           }
         });
       }
@@ -848,6 +1019,7 @@ export class DashboardComponent implements OnInit {
     ) {
       sql += 'WHERE ';
       let filterClauses = [];
+      sql;
 
       for (let i = 0; i < this.filters.length; i++) {
         const filter = this.filters[i];
@@ -929,20 +1101,6 @@ export class DashboardComponent implements OnInit {
       sql += '\n';
     }
 
-    // Add GROUP BY and aggregation if present
-    if (this.groupings.some((g) => g.groupByColumn)) {
-      const groupColumns = this.groupings
-        .filter((g) => g.groupByColumn)
-        .map((g) => g.groupByColumn);
-
-      if (groupColumns.length > 0) {
-        sql += `GROUP BY ${groupColumns.join(', ')}\n`;
-      }
-
-      // Add HAVING clause for aggregate filters if needed
-      // (This would be more complex and would depend on your specific implementation)
-    }
-
     // Add any custom expressions
     if (this.customExpression) {
       sql += `-- Custom Expression: ${this.customExpression}\n`;
@@ -966,8 +1124,8 @@ export class DashboardComponent implements OnInit {
     );
   }
 
+  // Save SQL Query functionality
   openSaveSqlOverlay() {
-    debugger;
     this.loadSqlHistory();
     this.showSaveSqlOverlay = true;
   }
@@ -1001,8 +1159,6 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // sqlHistoryData: any[] = [];
-
   // Show SQL history overlay and fetch history
   showSqlHistory() {
     this.showSqlHistoryOverlay = true;
@@ -1024,15 +1180,9 @@ export class DashboardComponent implements OnInit {
       userId: this.userId,
     };
 
-    this.apiService.GetSqlQuery(filterBody).subscribe(
-      (response: any) => {
-        this.sqlHistory = response || [];
-      }
-      // (error) => {
-      //   console.error('Error loading SQL history:', error);
-      //   alert('Failed to load SQL history.');
-      // }
-    );
+    this.apiService.GetSqlQuery(filterBody).subscribe((response: any) => {
+      this.sqlHistory = response || [];
+    });
   }
 
   loadSqlHistorydata() {
@@ -1056,5 +1206,65 @@ export class DashboardComponent implements OnInit {
     ) {
       this.showOverlay = false;
     }
+  }
+
+  @ViewChildren(
+    'selectTable, columnSpan, joinTypeSpan, joinTableSpan, filterSpan, groupSpan, appendSpan'
+  )
+  allSpans!: QueryList<ElementRef>;
+
+  constructor(
+    private renderer: Renderer2,
+    private zone: NgZone,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  ngAfterViewInit() {
+    // Initialize all spans after view is ready
+    this.allSpans.changes.subscribe(() => {
+      this.setupTooltips();
+    });
+
+    // Initial setup
+    this.setupTooltips();
+  }
+
+  setupTooltips() {
+    // Add tooltip detection for all spans
+    this.allSpans.forEach((spanRef: { nativeElement: any }) => {
+      const element = spanRef.nativeElement;
+
+      // Check if text is truncated
+      if (element.offsetWidth < element.scrollWidth) {
+        // Add visual indicator that tooltip is available (optional)
+        this.renderer.setStyle(element, 'cursor', 'help');
+      }
+    });
+  }
+
+  // Improved showTooltip function
+  showTooltip(element: HTMLElement, text: string | undefined) {
+    if (!text) return;
+
+    this.tooltipText = text;
+
+    const rect = element.getBoundingClientRect();
+
+    // Position tooltip centered below the element
+    const tooltipX = rect.left + rect.width / 2;
+    const tooltipY = rect.bottom + 5;
+
+    this.tooltipStyles = {
+      top: `${tooltipY}px`,
+      left: `${tooltipX}px`,
+    };
+
+    this.tooltipVisible = true;
+    this.cdr.detectChanges();
+  }
+
+  hideTooltip() {
+    this.tooltipVisible = false;
+    this.cdr.detectChanges();
   }
 }

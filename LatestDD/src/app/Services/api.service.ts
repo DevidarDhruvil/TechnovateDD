@@ -8,7 +8,6 @@ export class ApiService {
   constructor() {}
   http = inject(HttpClient);
  
-
   //Calls the API to get the list of tables.
   GetTableApi(payload: any) {
     return this.http.post('http://192.168.1.76:5100/api/Database/tables', payload);
@@ -36,8 +35,8 @@ export class ApiService {
  
 
   //Calls the API to get the Join data of the selected table.
-  GetJoinTableData(joinDetails: any){
-    return this.http.post(`http://192.168.1.76:5100/api/DynamicQuery/execute`,joinDetails);
+  GetExecuteJoinFilter(requestBody: any){
+    return this.http.post(`http://192.168.1.76:5100/api/DynamicQuery/execute`,requestBody);
     //http://192.168.1.30:5151/api/dashboard/execute
     //http://192.168.1.76:5100/api/DynamicQuery/execute
   }
@@ -62,22 +61,32 @@ export class ApiService {
 
 
   //Calls the API to get the filter data.
-  GetFilterData(filterBody: any){
-    console.log("filter data pass:",filterBody);
-    return this.http.post("http://192.168.1.76:5100/api/DynamicQuery/execute",filterBody)
+  // GetFilterData(filterBody: any){
+    // console.log("filter data pass:",filterBody);
+    // return this.http.post("http://192.168.1.76:5100/api/DynamicQuery/execute",filterBody)
     //http://192.168.1.76:5100/api/DynamicQuery/execute
     //http://192.168.1.30:5151/api/dashboard/execute
+  // }
+
+   //Calls the API to send the QueryData to backend team
+  GetSqlQuery(sqlBody: any) {
+    console.log('Query Saved:', sqlBody);
+    return this.http.post('http://192.168.1.76:5400/api/Query/execute',sqlBody);
   }
-  GetSqlQuery(filterBody: any) {
-    console.log('Query Saved:', filterBody);
-    debugger;
-    return this.http.post(
-      'http://192.168.1.76:5400/api/Query/execute',
-      filterBody
-    );
+
+  //Calls the API to get the QueryData from API.
+  GetsqlData(sqlBody:any){
+    return this.http.post('http://192.168.1.76:5400/api/Query/saved',sqlBody)
   }
-  GetsqlData(filterBody:any){
-    return this.http.post('http://192.168.1.76:5400/api/Query/saved',filterBody)
+
+  GetGrouping(groupingBody:any){
+    return this.http.post('http://192.168.1.30:5151/api/dashboard/groupby-aggregate',groupingBody)
   }
+
+  GetAppendTable(appendBody:any){
+    return this.http.post('http://192.168.1.30:5151/api/dashboard/append',appendBody);
+  }
+
+  
 
 }
