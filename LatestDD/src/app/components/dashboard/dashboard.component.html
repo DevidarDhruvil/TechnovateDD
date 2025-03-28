@@ -624,14 +624,18 @@
                 Remove
               </button>
             </div>
-            <button class="gas-add-btn" (click)="addGrouping()">
-              Add Grouping
-            </button>
-            <div class="gas-actions">
-              <button (click)="clearGroupings()">Clear</button>
-              <button (click)="applyGroupings()">Apply</button>
-              <button (click)="closeGroupSummarizeOverlay()">Close</button>
+
+            <div class="bottombtns-gas">
+              <div class="gas-add-btn" >
+                <button (click)="addGrouping()">Add Grouping</button>
+              </div>
+              <div class="gas-actions">
+                <button (click)="clearGroupings()" >Clear</button>
+                <button (click)="applyGroupings()" >Apply</button>
+                <button (click)="closeGroupSummarizeOverlay()">Close</button>
+              </div>
             </div>
+
           </div>
         </div>
 
@@ -701,6 +705,22 @@
                   class="highlightValues"
                 >
                   {{ filter.column }}
+                </span>
+              </div> 
+            </div>
+
+            <div *ngIf="groups.length > 0">
+              <div class="selected-filter" style="padding-top: 0;">
+                <i class="fa-solid fa-object-group opIcons"></i>
+                <span>GroupBy</span>
+              </div>
+              <div class="selected-group-container">
+                <span
+                  (click)="editFilter()"
+                  *ngFor="let group of groups; let i = index"
+                  class="highlightValues"
+                >
+                  {{ group.aggregateColumn }}
                 </span>
               </div> 
             </div>

@@ -1039,12 +1039,14 @@ export class DashboardComponent implements OnInit {
   // Show SQL history overlay and fetch history
   showSqlHistory() {
     this.showSqlHistoryOverlay = true;
+    this.showSqlTemplateOverlay = false;
     this.loadSqlHistorydata()
   }
 
   // Close SQL history overlay
   closeSqlHistoryOverlay() {
     this.showSqlHistoryOverlay = false;
+    this.showSqlTemplateOverlay = true;
   }
 
   // Fetch SQL history from the backend
