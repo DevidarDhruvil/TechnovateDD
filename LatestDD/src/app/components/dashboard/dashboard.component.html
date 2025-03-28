@@ -633,13 +633,16 @@
                 </button>
               </div>
             </div>
-            <button class="gas-add-btn" (click)="addGrouping()">
-              Add Grouping
-            </button>
-            <div class="gas-actions">
-              <button (click)="clearGroupings()">Clear</button>
-              <button (click)="applyGroupings()">Apply</button>
-              <button (click)="closeGroupSummarizeOverlay()">Close</button>
+
+            <div class="bottombtns-gas">
+              <div class="gas-add-btn">
+                <button (click)="addGrouping()">Add Grouping</button>
+              </div>
+              <div class="gas-actions">
+                <button (click)="clearGroupings()">Clear</button>
+                <button (click)="applyGroupings()">Apply</button>
+                <button (click)="closeGroupSummarizeOverlay()">Close</button>
+              </div>
             </div>
           </div>
         </div>
@@ -738,20 +741,16 @@
           </div>
 
           <div *ngIf="selectedQuery?.selectedTableToAppend">
-            <div class="selected-append" >
+            <div class="selected-append">
               <i class="fa-solid fa-layer-group opIcons"></i>
               <span>Filter</span>
             </div>
             <div class="selected-append-container">
-              <span
-                (click)="editappendtable()"
-                class="highlightValues"
-              >
+              <span (click)="editappendtable()" class="highlightValues">
                 {{ selectedQuery?.selectedTableToAppend }}
               </span>
             </div>
           </div>
-
         </div>
       </div>
     </div>
